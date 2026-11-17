@@ -14,7 +14,9 @@
     <img src="https://img.shields.io/badge/Language-Rust-orange?logo=rust&logoColor=white" alt="Rust">
     <img src="https://img.shields.io/badge/Runtime-compio-informational" alt="compio">
     <img src="https://img.shields.io/badge/License-MIT-blue?logo=opensourceinitiative&logoColor=white" alt="License">
-    <a href="https://github.com/professor-lee/cria/actions/workflows/ci.yml"><img src="https://github.com/professor-lee/cria/actions/workflows/ci.yml/badge.svg?branch=develop" alt="CI"></a>
+    <a href="https://crates.io/crates/cria-api"><img src="https://img.shields.io/crates/v/cria-api?logo=rust" alt="crates.io"></a>
+    <a href="https://docs.rs/cria-api"><img src="https://img.shields.io/docsrs/cria-api?logo=docs.rs" alt="docs.rs"></a>
+    <a href="https://github.com/alpaca-herd/cria/actions/workflows/ci.yml"><img src="https://github.com/alpaca-herd/cria/actions/workflows/ci.yml/badge.svg?branch=develop" alt="CI"></a>
 </p>
 
 ## 项目简介
@@ -35,16 +37,17 @@ CNMPlayer 是它的第一个使用方，对自己用到的接口做过真实服�
 
 ## 安装
 
-crates.io 包名为 **`cria-api`**，代码中的导入名为 **`cria`**。首次发布到 crates.io 之前，请直接依赖本仓库并锁定提交：
+crates.io 包名为 **`cria-api`**，代码中的导入名为 **`cria`**：
 
 ```toml
 [dependencies]
-cria-api = { git = "https://github.com/professor-lee/cria", rev = "<commit>" }
+cria-api = "0.1"
 cyper = "0.9"
 compio = { version = "0.19", features = ["macros"] }
 ```
 
-发布到 crates.io 后改为 `cria-api = "0.1"`。
+如需试用尚未发布的改动，改为依赖本仓库并锁定提交：
+`cria-api = { git = "https://github.com/alpaca-herd/cria", rev = "<commit>" }`。
 
 构建需要 Rust 1.95 或更新版本（compio 依赖链用到 `std::cfg_select!`）；默认的 `native-tls` feature 还需要系统
 OpenSSL 开发包（Debian/Ubuntu 为 `libssl-dev`，Arch 为 `openssl`）。
@@ -95,7 +98,7 @@ async fn main() -> Result<(), NcmError> {
 
 ## 项目状态
 
-- 版本 `0.1.0`，尚未发布到 crates.io。
+- 版本 `0.1.0`，已发布到 [crates.io](https://crates.io/crates/cria-api)；API 文档见 [docs.rs](https://docs.rs/cria-api)。
 - API 与上游模块集合对应，新接口随上游变化补充。
 - 集成测试使用本地 TCP 服务，不会访问真实服务。
 

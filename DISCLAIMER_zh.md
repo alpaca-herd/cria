@@ -71,7 +71,7 @@ cookie 视为凭据：不要记录到日志、公开或分享，也不要放进�
 
 ## 9. 报告
 
-如认为本仓库中的材料侵犯了您的权利，请通过 [GitHub Issues](https://github.com/professor-lee/cria/issues) 报告。
+如认为本仓库中的材料侵犯了您的权利，请通过 [GitHub Issues](https://github.com/alpaca-herd/cria/issues) 报告。
 若报告包含个人信息、保密证据或可被利用的安全问题，请联系维护者 [mail@professorlee.work](mailto:mail@professorlee.work)，不要公开披露。
 请勿附上密码、cookie 或会话文件。
 

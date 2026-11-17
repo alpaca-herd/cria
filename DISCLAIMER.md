@@ -99,7 +99,7 @@ rights that applicable law does not allow to be excluded or limited.
 ## 9. Reports
 
 If you believe material in this repository infringes your rights, report it through
-[GitHub Issues](https://github.com/professor-lee/cria/issues). For reports containing personal information,
+[GitHub Issues](https://github.com/alpaca-herd/cria/issues). For reports containing personal information,
 confidential evidence or an exploitable security issue, contact the maintainer at
 [mail@professorlee.work](mailto:mail@professorlee.work) instead of disclosing it publicly. Do not attach
 passwords, cookies or session files.

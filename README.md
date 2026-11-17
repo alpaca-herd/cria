@@ -14,7 +14,9 @@
     <img src="https://img.shields.io/badge/Language-Rust-orange?logo=rust&logoColor=white" alt="Rust">
     <img src="https://img.shields.io/badge/Runtime-compio-informational" alt="compio">
     <img src="https://img.shields.io/badge/License-MIT-blue?logo=opensourceinitiative&logoColor=white" alt="License">
-    <a href="https://github.com/professor-lee/cria/actions/workflows/ci.yml"><img src="https://github.com/professor-lee/cria/actions/workflows/ci.yml/badge.svg?branch=develop" alt="CI"></a>
+    <a href="https://crates.io/crates/cria-api"><img src="https://img.shields.io/crates/v/cria-api?logo=rust" alt="crates.io"></a>
+    <a href="https://docs.rs/cria-api"><img src="https://img.shields.io/docsrs/cria-api?logo=docs.rs" alt="docs.rs"></a>
+    <a href="https://github.com/alpaca-herd/cria/actions/workflows/ci.yml"><img src="https://github.com/alpaca-herd/cria/actions/workflows/ci.yml/badge.svg?branch=develop" alt="CI"></a>
 </p>
 
 ## Overview
@@ -40,17 +42,17 @@ individually verified.
 
 ## Installation
 
-The crate is published as **`cria-api`** and imported as **`cria`**. Until the first crates.io release,
-depend on the repository directly and pin a revision:
+The crate is published on crates.io as **`cria-api`** and imported as **`cria`**:
 
 ```toml
 [dependencies]
-cria-api = { git = "https://github.com/professor-lee/cria", rev = "<commit>" }
+cria-api = "0.1"
 cyper = "0.9"
 compio = { version = "0.19", features = ["macros"] }
 ```
 
-After the crates.io release this becomes `cria-api = "0.1"`.
+To try unreleased changes, depend on the repository instead and pin a revision:
+`cria-api = { git = "https://github.com/alpaca-herd/cria", rev = "<commit>" }`.
 
 Building requires Rust 1.95 or newer (the compio stack uses `std::cfg_select!`) and, with the default
 `native-tls` feature, the system OpenSSL development package (`libssl-dev` on Debian/Ubuntu, `openssl` on Arch).
@@ -110,7 +112,7 @@ crate in the build enables a TLS backend on `cyper`.
 
 ## Project status
 
-- Version `0.1.0`, not yet published on crates.io.
+- Version `0.1.0`, published on [crates.io](https://crates.io/crates/cria-api); API documentation on [docs.rs](https://docs.rs/cria-api).
 - The API mirrors the upstream module set; new endpoints follow upstream changes.
 - Integration tests use local TCP servers and never contact the live service.
 
