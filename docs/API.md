@@ -1,8 +1,8 @@
-# NCM API Rust SDK 接口文档
+# CRIA 接口文档
 
-> 本文档对应 [NeteaseCloudMusicApi Enhanced](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced) 的 Rust SDK 版本，涵盖所有已实现的接口。
+> 本文档对应 [NeteaseCloudMusicApi Enhanced](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced) 的 Rust 移植 CRIA（crate `cria-api`，导入名 `cria`），涵盖所有已实现的接口。
 >
-> 所有接口方法均挂载在 `ApiClient` 上，通过 `Query` 对象传参。使用前请先阅读 [CNMPlayer README](../../README.md) 了解仓库集成方式。
+> 所有接口方法均挂载在 `cria::ApiClient` 上，通过 `cria::Query` 对象传参。构造客户端与运行时要求见 [README](../README_zh.md)。
 
 请求路径必须使用 `/api/<endpoint>` 形式；空 endpoint、非 `/api/` 路径以及非对象 `data` 参数会在发起网络请求前返回 `InvalidParam`。网络代理不在 `Query` 或请求选项中配置，请在外部构造并注入已配置代理的 `cyper::Client`。
 
@@ -6431,7 +6431,8 @@ let result = client.verify_qrcodestatus(&query).await.unwrap();
 
 - [NeteaseCloudMusicApi Enhanced](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced) - 原始 Node.js 实现
 - [Binaryify/NeteaseCloudMusicApi](https://github.com/Binaryify/NeteaseCloudMusicApi) - 原始项目
+- 完整致谢与上游许可声明见 [ACKNOWLEDGEMENTS.md](../ACKNOWLEDGEMENTS.md)
 
 ### License
 
-本项目基于 [WTFPL v2](../LICENSE) 开源。
+本项目基于 [MIT License](../LICENSE) 开源。
