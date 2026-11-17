@@ -11,11 +11,13 @@ keywords = ["netease", "cloud-music", "music", "api", "compio"]
 categories = ["api-bindings", "web-programming::http-client"]
 include = [
     "/src",
+    "/examples",
     "/docs",
     "/README.md",
     "/README_zh.md",
     "/LICENSE",
     "/ACKNOWLEDGEMENTS.md",
+    "/ACKNOWLEDGEMENTS_zh.md",
     "/DISCLAIMER.md",
     "/DISCLAIMER_zh.md",
 ]
