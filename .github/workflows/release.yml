@@ -1,0 +1,209 @@
+name: Release
+
+# GitHub is the source of truth: a `vX.Y.Z` tag pushed on a `main` commit publishes that commit to crates.io and
+# creates the GitHub Release. Re-running the workflow is safe: a version already on crates.io is not published
+# again, and an existing GitHub Release is left untouched.
+# workflow_dispatch is a dry run on the selected branch: the same gates plus `cargo publish --dry-run`.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  CRATE: cria-api
+
+jobs:
+  verify:
+    name: Verify tag and version
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      prerelease: ${{ steps.meta.outputs.prerelease }}
+      published: ${{ steps.meta.outputs.published }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Check version, tag, branch and changelog
+        id: meta
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n1)
+          if [ -z "$VERSION" ]; then
+            echo "::error::cannot read the package version from Cargo.toml"
+            exit 1
+          fi
+
+          if [ "$EVENT" = "push" ]; then
+            if [ "$GITHUB_REF_NAME" != "v$VERSION" ]; then
+              echo "::error::tag $GITHUB_REF_NAME does not match Cargo.toml version $VERSION"
+              exit 1
+            fi
+            git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+            if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+              echo "::error::tag $GITHUB_REF_NAME points to $GITHUB_SHA, which is not on main"
+              exit 1
+            fi
+          fi
+
+          for file in CHANGELOG.md CHANGELOG_zh.md; do
+            if ! .github/scripts/changelog_section.sh "$file" "$VERSION" > /dev/null; then
+              echo "::error::$file has no non-empty section for $VERSION"
+              exit 1
+            fi
+          done
+
+          STATUS=$(curl -sS -o /dev/null -w '%{http_code}' \
+            -A "cria-release (https://github.com/${GITHUB_REPOSITORY})" \
+            "https://crates.io/api/v1/crates/${CRATE}/${VERSION}")
+          case "$STATUS" in
+            200) PUBLISHED=true ;;
+            404) PUBLISHED=false ;;
+            *) echo "::error::crates.io returned HTTP $STATUS for ${CRATE} ${VERSION}"; exit 1 ;;
+          esac
+
+          case "$VERSION" in
+            *-*) PRERELEASE=true ;;
+            *) PRERELEASE=false ;;
+          esac
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+          echo "published=$PUBLISHED" >> "$GITHUB_OUTPUT"
+          echo "${CRATE} ${VERSION}: prerelease=${PRERELEASE}, already on crates.io=${PUBLISHED}" >> "$GITHUB_STEP_SUMMARY"
+
+  gate:
+    name: CI
+    needs: verify
+    uses: ./.github/workflows/ci.yml
+
+  semver:
+    name: semver checks
+    needs: verify
+    if: needs.verify.outputs.published == 'false' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
+
+      # Compares the public API with the newest release on crates.io and fails when the version bump in
+      # Cargo.toml is too small for the changes.
+      - uses: obi1kenobi/cargo-semver-checks-action@v2
+        with:
+          package: cria-api
+
+  dry-run:
+    name: cargo publish --dry-run
+    needs: [verify, gate, semver]
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      RUSTUP_TOOLCHAIN: stable
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: cargo publish --dry-run --locked
+        run: cargo publish --dry-run --locked
+
+  publish:
+    name: Publish to crates.io
+    needs: [verify, gate, semver]
+    if: github.event_name == 'push' && needs.verify.outputs.published == 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: crates-io
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      RUSTUP_TOOLCHAIN: stable
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      # Trusted Publishing: exchanges the GitHub OIDC token for a short-lived crates.io token, revoked when
+      # the job ends. crates.io must list alpaca-herd/cria, workflow release.yml, environment crates-io.
+      - uses: rust-lang/crates-io-auth-action@v1
+        id: auth
+
+      - name: cargo publish --locked
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+        run: cargo publish --locked
+
+  github-release:
+    name: GitHub Release
+    needs: [verify, gate, publish]
+    if: >-
+      ${{ always() && !cancelled() && github.event_name == 'push'
+      && needs.verify.result == 'success' && needs.gate.result == 'success'
+      && (needs.publish.result == 'success'
+          || (needs.publish.result == 'skipped' && needs.verify.outputs.published == 'true')) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Create the release from the changelog
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.verify.outputs.version }}
+          PRERELEASE: ${{ needs.verify.outputs.prerelease }}
+        run: |
+          set -euo pipefail
+          TAG="v$VERSION"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "GitHub Release $TAG already exists" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          {
+            .github/scripts/changelog_section.sh CHANGELOG.md "$VERSION"
+            printf '\n---\n\n'
+            .github/scripts/changelog_section.sh CHANGELOG_zh.md "$VERSION"
+            printf '\n---\n\ncrates.io: https://crates.io/crates/%s/%s\n' "$CRATE" "$VERSION"
+          } > release-notes.md
+          ARGS=(--verify-tag --title "$TAG" --notes-file release-notes.md)
+          if [ "$PRERELEASE" = "true" ]; then
+            ARGS+=(--prerelease)
+          fi
+          gh release create "$TAG" "${ARGS[@]}"
