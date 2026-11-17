@@ -115,6 +115,8 @@ crate in the build enables a TLS backend on `cyper`.
 ## Project status
 
 - Version `0.1.0`, published on [crates.io](https://crates.io/crates/cria-api); API documentation on [docs.rs](https://docs.rs/cria-api).
+- Releases are tagged on GitHub and published to crates.io by CI; see [CHANGELOG.md](CHANGELOG.md) and the
+  [GitHub Releases](https://github.com/alpaca-herd/cria/releases).
 - The API mirrors the upstream module set; new endpoints follow upstream changes.
 - Integration tests use local TCP servers and never contact the live service.
 

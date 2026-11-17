@@ -58,8 +58,8 @@ cargo run --example cloudsearch -- 海阔天空   # 需要网络
 | `src/error.rs` | `NcmError` 与 crate 的 `Result` 别名。 |
 | `examples/` | 可运行示例。 |
 | `docs/API.md` | 接口文档（简体中文，沿用上游文档结构）。 |
-| `.github/` | CI。 |
-| 根目录文档 | `README.md` / `README_zh.md`（两种语言并行维护）、`CONTRIBUTING*.md`、`CODE_OF_CONDUCT*.md`、`DISCLAIMER*.md`、`ACKNOWLEDGEMENTS*.md`、`LICENSE`（MIT）。 |
+| `.github/` | CI（`workflows/ci.yml`）、发版流程（`workflows/release.yml`）及其辅助脚本。 |
+| 根目录文档 | `README.md` / `README_zh.md`（两种语言并行维护）、`CHANGELOG*.md`、`CONTRIBUTING*.md`、`CODE_OF_CONDUCT*.md`、`DISCLAIMER*.md`、`ACKNOWLEDGEMENTS*.md`、`LICENSE`（MIT）。 |
 
 ## 移植接口
 
@@ -86,7 +86,7 @@ cargo run --example cloudsearch -- 海阔天空   # 需要网络
 
 lint 使用带 `-D warnings` 的 `cargo clippy`；`clippy.toml` 把 `too-many-arguments-threshold` 放宽到 8、`type-complexity-threshold` 放宽到 300。
 
-CI（`.github/workflows/ci.yml`）在指向 `main` / `develop` 的 PR 以及推送到 `develop` 时运行，所有任务均在 `ubuntu-24.04` 上执行并安装上述系统依赖：
+CI（`.github/workflows/ci.yml`）在指向 `main` / `develop` 的 PR、推送到 `develop` 时运行，并作为发版流程的门禁被调用。所有任务均在 `ubuntu-24.04` 上执行并安装上述系统依赖：
 
 - `build-and-test`：在 stable 上以默认 features 与 `--no-default-features` 分别运行 `cargo check` 与 `cargo test`（`--locked --all-targets`）。
 - `quality`：在 stable 上并装好 `rustfmt`、`clippy` 组件后运行 `cargo fmt --all -- --check`，`--all-features` 与 `--no-default-features` 两次带 `-D warnings` 的 clippy，以及带 `RUSTDOCFLAGS=-D warnings` 的 `cargo doc --no-deps`。
@@ -113,4 +113,24 @@ cargo package --locked
 
 仓库提交 `Cargo.lock`，让 CI 与贡献者使用相同的依赖版本；依赖变更请在同一个 PR 中更新它。
 
-版本号与发布不属于普通 PR：由维护者修改 `Cargo.toml` 中的版本并将 `cria-api` 发布到 crates.io。
+## 更新记录
+
+改变 crate 行为或公开 API 的 PR，需要在 `CHANGELOG.md` 与 `CHANGELOG_zh.md` 的 `## [Unreleased]` 下对应的 `新增` / `变更` / `修复` / `移除`（英文版为 `Added` / `Changed` / `Fixed` / `Removed`）小节各加一条。不影响 crate 使用者的改动（测试、CI、内部重构）无需记录。
+
+## 发版
+
+版本号、tag 与发布说明以 GitHub 为准；crates.io 只接收 CI 依据 tag 发布的内容。发版由维护者执行：
+
+1. 在 `develop` 上提 PR：修改 `Cargo.toml` 的 `version`（运行 `cargo check` 让 `Cargo.lock` 同步），把两份更新记录中的 `## [Unreleased]` 改为 `## [X.Y.Z] - YYYY-MM-DD`，补一个新的空 `## [Unreleased]`，并更新文末的对比链接。
+2. 通过 PR 把 `develop` 合并到 `main`。
+3. 在合并后的 `main` 提交上打 tag 并推送：`git tag -a vX.Y.Z -m "vX.Y.Z" origin/main && git push origin vX.Y.Z`。预发布版本如 `0.2.0-rc.1` 使用 tag `v0.2.0-rc.1`。
+
+推送 tag 会触发 `.github/workflows/release.yml`：
+
+- `verify`：要求 tag 等于 `v` + `Cargo.toml` 版本、tag 指向的提交位于 `main` 上、两份更新记录都有该版本的非空小节，并记录 crates.io 上是否已有该版本。
+- `gate`：在 tag 提交上运行完整的 CI 工作流。
+- `semver checks`：用 `cargo-semver-checks` 与 crates.io 上的最新版本对比，版本号升级幅度不足以覆盖 API 变化时失败。
+- `publish`：在 `crates-io` environment 中运行 `cargo publish --locked`，通过 crates.io Trusted Publishing 认证，仓库不保存 crates.io token。
+- `github-release`：用更新记录中该版本的小节（先英文后中文）创建 GitHub Release，预发布版本标记为 pre-release。
+
+发版失败后可直接重跑：crates.io 已有的版本不会重复发布，已存在的 GitHub Release 会保留。crates.io 上的版本永远不能覆盖，出错只能发新版本（必要时 `cargo yank`）。需要演练时，在某个分支上手动运行 Release 工作流（`workflow_dispatch`）：它执行相同的检查并运行 `cargo publish --dry-run`，不发布任何内容。

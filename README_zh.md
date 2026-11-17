@@ -100,6 +100,7 @@ async fn main() -> Result<(), NcmError> {
 ## 项目状态
 
 - 版本 `0.1.0`，已发布到 [crates.io](https://crates.io/crates/cria-api)；API 文档见 [docs.rs](https://docs.rs/cria-api)。
+- 版本在 GitHub 上打 tag，由 CI 发布到 crates.io；变更见 [CHANGELOG_zh.md](CHANGELOG_zh.md) 与 [GitHub Releases](https://github.com/alpaca-herd/cria/releases)。
 - API 与上游模块集合对应，新接口随上游变化补充。
 - 集成测试使用本地 TCP 服务，不会访问真实服务。
 
