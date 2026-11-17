@@ -14,9 +14,9 @@
 
 - 上游：https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced
 - 许可：MIT，版权所有 (c) 2013-2022 Binaryify
-- 关系：CRIA 是该 Node.js 项目的 Rust 移植。`src/api/` 下的各接口模块、`src/request.rs` 中的请求构造与 cookie
-  处理、`src/crypto.rs` 中的加密方式以及 `src/util/config.rs` 中的常量，均对应上游 `module/` 与 `util/` 的实现；
-  `docs/API.md` 改编自上游文档。
+- 关系：CRIA 所遵循的语义来源。CRIA 的代码经由下文的 ncm-api-rs（该项目的 Rust 移植）而来，并持续逐接口对照它。
+  `src/api/` 下的各接口模块、`src/request.rs` 中的请求构造与 cookie 处理、`src/crypto.rs` 中的加密方式以及
+  `src/util/config.rs` 中的常量，均对应上游 `module/` 与 `util/` 的实现；`docs/API.md` 改编自上游文档。
 
 感谢维持这套接口可用的贡献者，以及逆向 weapi、eapi、xeapi 加密方式的各位。
 

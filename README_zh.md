@@ -21,8 +21,9 @@
 
 ## 项目简介
 
-CRIA 是社区 Node.js 项目 [NeteaseCloudMusicApi Enhanced](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced)
-的 Rust 移植。应用不必再起一个 Node.js HTTP 服务，直接链接 CRIA 调用接口：
+CRIA 是 CNMPlayer 维护的网易云音乐 API 客户端，源自 [ncm-api-rs](https://github.com/imsyy/ncm-api-rs)
+（[NeteaseCloudMusicApi Enhanced](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced) 的 Rust 移植），
+并持续对照 api-enhanced 同步接口。应用不必再起一个 Node.js HTTP 服务，直接链接 CRIA 调用接口：
 
 - `ApiClient` 上约 370 个接口方法，一个上游模块对应一个文件，参数统一经 `Query` 传入；
 - 支持 weapi / eapi / linuxapi / xeapi 加密与明文 api 请求，包括 xeapi 的公钥注册与会话握手；

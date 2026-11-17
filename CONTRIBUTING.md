@@ -6,9 +6,10 @@
 
 # Contributing to CRIA
 
-CRIA is a Rust port of the NeteaseCloudMusicApi Enhanced endpoints. This document covers the branch and
-pull-request rules, the development environment, the repository layout, how to port an endpoint, and the
-formatting and CI conventions.
+CRIA is the NetEase Cloud Music API client maintained by CNMPlayer. It originates from ncm-api-rs, a Rust port
+of NeteaseCloudMusicApi Enhanced, and keeps its endpoints in sync with api-enhanced. This document covers the
+branch and pull-request rules, the development environment, the repository layout, how to port an endpoint,
+and the formatting and CI conventions.
 
 ## Branch and pull request rules
 

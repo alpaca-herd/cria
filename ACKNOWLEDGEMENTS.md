@@ -13,10 +13,11 @@ apply to the material CRIA derives from them. CRIA's own code is licensed under 
 
 - Upstream: https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced
 - License: MIT, copyright (c) 2013-2022 Binaryify
-- Relationship: CRIA is a Rust port of this Node.js project. The endpoint modules under `src/api/`, the
-  request construction and cookie handling in `src/request.rs`, the encryption schemes in `src/crypto.rs`
-  and the constants in `src/util/config.rs` follow the upstream `module/` and `util/` implementations.
-  `docs/API.md` is adapted from the upstream documentation.
+- Relationship: the semantic source CRIA follows. CRIA's code reached it through ncm-api-rs (below), a Rust
+  port of this project, and is still compared against it endpoint by endpoint. The endpoint modules under
+  `src/api/`, the request construction and cookie handling in `src/request.rs`, the encryption schemes in
+  `src/crypto.rs` and the constants in `src/util/config.rs` follow the upstream `module/` and `util/`
+  implementations. `docs/API.md` is adapted from the upstream documentation.
 
 Thanks to the contributors who keep the API working and to everyone who reverse-engineered the weapi,
 eapi and xeapi schemes.

@@ -1,6 +1,6 @@
 # CRIA 接口文档
 
-> 本文档对应 [NeteaseCloudMusicApi Enhanced](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced) 的 Rust 移植 CRIA（crate `cria-api`，导入名 `cria`），涵盖所有已实现的接口。
+> CRIA（crate `cria-api`，导入名 `cria`）是 CNMPlayer 维护的网易云 API 客户端，源自 [ncm-api-rs](https://github.com/imsyy/ncm-api-rs)（[NeteaseCloudMusicApi Enhanced](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced) 的 Rust 移植），并持续对照 api-enhanced 同步接口。本文档沿用上游文档结构，涵盖所有已实现的接口。
 >
 > 所有接口方法均挂载在 `cria::ApiClient` 上，通过 `cria::Query` 对象传参。构造客户端与运行时要求见 [README](../README_zh.md)。
 

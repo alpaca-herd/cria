@@ -21,9 +21,11 @@
 
 ## Overview
 
-CRIA is a Rust port of [NeteaseCloudMusicApi Enhanced](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced),
-the community Node.js NetEase Cloud Music API. Instead of running a Node.js HTTP service, an application
-links CRIA and calls the endpoints directly:
+CRIA is the NetEase Cloud Music API client maintained by CNMPlayer. It originates from
+[ncm-api-rs](https://github.com/imsyy/ncm-api-rs), a Rust port of
+[NeteaseCloudMusicApi Enhanced](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced), and keeps its
+endpoints in sync with api-enhanced. Instead of running a Node.js HTTP service, an application links CRIA and
+calls the endpoints directly:
 
 - about 370 endpoint methods on `ApiClient`, one file per upstream module, parameters passed through `Query`;
 - the weapi / eapi / linuxapi / xeapi encryption schemes and plain api requests, including the xeapi

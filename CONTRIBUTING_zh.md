@@ -6,7 +6,7 @@
 
 # 参与 CRIA 贡献
 
-CRIA 是 NeteaseCloudMusicApi Enhanced 接口的 Rust 移植。本文说明分支与 PR 规则、开发环境、仓库结构、接口移植方式，以及格式与 CI 约定。
+CRIA 是 CNMPlayer 维护的网易云音乐 API 客户端，源自 ncm-api-rs（NeteaseCloudMusicApi Enhanced 的 Rust 移植），并持续对照 api-enhanced 同步接口。本文说明分支与 PR 规则、开发环境、仓库结构、接口移植方式，以及格式与 CI 约定。
 
 ## 分支与 PR 规则
 
