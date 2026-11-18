@@ -85,6 +85,18 @@ impl ApiClient {
 
             let mut page = self.user_event(&page_query).await?;
             cookies.extend(page.cookie.iter().cloned());
+            let page_code = page
+                .body
+                .get("code")
+                .and_then(js_number)
+                .unwrap_or(page.status as f64);
+            if page.status != 200 || page_code != 200.0 {
+                return Ok(ApiResponse {
+                    status: page.status,
+                    body: page.body,
+                    cookie: cookies,
+                });
+            }
 
             if page_count == 1 {
                 size = page.body.get("size").and_then(js_number);

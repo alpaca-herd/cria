@@ -8,16 +8,21 @@ use std::collections::HashMap;
 // ---- 歌曲相关 ----
 mod check_music;
 mod like;
+mod like_v1;
 mod likelist;
 mod lyric;
 mod lyric_new;
+mod relay_play_state_submit;
 mod scrobble;
 mod song_chorus;
+mod song_copyright_rcmd;
+mod song_creators;
 mod song_detail;
 mod song_downlist;
 mod song_download_url;
 mod song_download_url_v1;
 mod song_dynamic_cover;
+mod song_like;
 mod song_like_check;
 mod song_lyrics_mark;
 mod song_lyrics_mark_add;
@@ -32,6 +37,7 @@ mod song_singledownlist;
 mod song_url;
 mod song_url_v1;
 mod song_url_v1_302;
+mod song_wiki_info;
 mod song_wiki_summary;
 
 // ---- 搜索相关 ----
@@ -40,9 +46,13 @@ mod search;
 mod search_default;
 mod search_hot;
 mod search_hot_detail;
+mod search_lyric;
 mod search_match;
 mod search_multimatch;
+mod search_song_list_page;
 mod search_suggest;
+mod search_suggest_mobile;
+mod search_suggest_pc;
 
 // ---- 听歌识曲 ----
 mod audio_match;
@@ -88,6 +98,8 @@ mod artist_list;
 mod artist_mv;
 mod artist_new_mv;
 mod artist_new_song;
+mod artist_new_song_mv_list_v2;
+mod artist_new_song_playall;
 mod artist_songs;
 mod artist_sub;
 mod artist_sublist;
@@ -110,11 +122,15 @@ mod album_sublist;
 
 // ---- 评论相关 ----
 mod comment;
+mod comment_add;
 mod comment_album;
+mod comment_default_text;
+mod comment_delete;
 mod comment_dj;
 mod comment_event;
 mod comment_floor;
 mod comment_hot;
+mod comment_hotwall_square_info;
 mod comment_hug_list;
 mod comment_info_list;
 mod comment_like;
@@ -122,9 +138,12 @@ mod comment_music;
 mod comment_mv;
 mod comment_new;
 mod comment_playlist;
+mod comment_reply;
+mod comment_report;
 mod comment_video;
 
 // ---- 推荐相关 ----
+mod dislike_list;
 mod history_recommend_songs;
 mod history_recommend_songs_detail;
 mod personalized;
@@ -134,9 +153,13 @@ mod personalized_newsong;
 mod personalized_privatecontent;
 mod personalized_privatecontent_list;
 mod program_recommend;
+mod recommend_category_configs;
+mod recommend_category_set;
+mod recommend_category_songs;
 mod recommend_resource;
 mod recommend_songs;
 mod recommend_songs_dislike;
+mod recommend_songs_v1;
 
 // ---- 登录相关 ----
 mod activate_init_profile;
@@ -152,7 +175,9 @@ mod register_anonimous;
 mod register_cellphone;
 
 // ---- 验证相关 ----
+mod captcha_safe_sent;
 mod captcha_sent;
+mod captcha_sent_v1;
 mod captcha_verify;
 mod cellphone_existence_check;
 mod nickname_check;
@@ -160,6 +185,9 @@ mod verify_get_qr;
 mod verify_qrcodestatus;
 
 // ---- 用户相关 ----
+mod device_kickoff;
+mod device_list;
+mod deviceinfo_center_upload;
 mod follow;
 mod get_userids;
 mod rebind;
@@ -176,6 +204,7 @@ mod user_detail;
 mod user_detail_new;
 mod user_dj;
 mod user_event;
+mod user_event_all;
 mod user_follow_mixed;
 mod user_followeds;
 mod user_follows;
@@ -200,6 +229,11 @@ mod personal_fm_mode;
 
 // ---- Banner ----
 mod banner;
+// ---- 广告相关 ----
+mod ad_get;
+mod ad_listening_rights;
+mod ad_listening_rights_gain;
+mod banner_v3;
 
 // ---- 签到 ----
 mod daily_signin;
@@ -219,9 +253,15 @@ mod mv_url;
 // ---- 电台相关 ----
 mod dj_banner;
 mod dj_category_excludehot;
+mod dj_category_list;
 mod dj_category_recommend;
 mod dj_catelist;
 mod dj_detail;
+mod dj_difm_all_style_channel;
+mod dj_difm_channel_subscribe;
+mod dj_difm_channel_unsubscribe;
+mod dj_difm_playing_tracks_list;
+mod dj_difm_subscribe_channels_get;
 mod dj_hot;
 mod dj_paygift;
 mod dj_personalize_recommend;
@@ -242,6 +282,7 @@ mod dj_toplist_hours;
 mod dj_toplist_newcomer;
 mod dj_toplist_pay;
 mod dj_toplist_popular;
+mod radio_sport_get;
 
 // ---- 相似推荐 ----
 mod simi_artist;
@@ -249,8 +290,11 @@ mod simi_mv;
 mod simi_playlist;
 mod simi_song;
 mod simi_user;
+mod song_simi_get;
 
 // ---- 排行榜 ----
+mod chart_detail;
+mod chart_song_detail;
 mod top_album;
 mod top_artists;
 mod top_list;
@@ -286,6 +330,8 @@ mod msg_recentcontact;
 mod event;
 mod event_del;
 mod event_forward;
+mod event_privacy;
+mod event_search;
 
 // ---- 发送/分享 ----
 mod send_album;
@@ -299,6 +345,7 @@ mod resource_like;
 
 // ---- 国家编码 ----
 mod countries_code_list;
+mod lbs_city_code;
 
 // ---- 最近播放 ----
 mod recent_listen_list;
@@ -336,12 +383,14 @@ mod sheet_preview;
 
 // ---- Mlog 相关 ----
 mod mlog_music_rcmd;
+mod mlog_mycollect;
 mod mlog_to_video;
 mod mlog_url;
 
 // ---- 听歌足迹 ----
 mod listen_data_realtime_report;
 mod listen_data_report;
+mod listen_data_song_play_rank;
 mod listen_data_today_song;
 mod listen_data_total;
 mod listen_data_year_report;
@@ -371,6 +420,19 @@ mod musician_tasks_new;
 mod musician_vip_tasks;
 
 // ---- UGC 百科相关 ----
+mod rep_ugc_activity_collect;
+mod rep_ugc_activity_get;
+mod rep_ugc_exam_info_get;
+mod rep_ugc_exam_question_single_get;
+mod rep_ugc_exam_result_get;
+mod rep_ugc_exam_start;
+mod rep_ugc_exam_submit;
+mod rep_ugc_user_collect_vip;
+mod rep_ugc_user_get;
+mod rep_ugc_user_sign;
+mod rep_ugc_user_vip;
+mod thinktank_audit_resource_detail;
+mod thinktank_audit_resource_update;
 mod ugc_album_get;
 mod ugc_artist_get;
 mod ugc_artist_search;
@@ -380,6 +442,10 @@ mod ugc_song_get;
 mod ugc_user_devote;
 
 // ---- 粉丝中心相关 ----
+mod fans_group_detail;
+mod fans_group_feed_recommend;
+mod fans_group_user_group_detail;
+mod fans_group_user_groups;
 mod fanscenter_basicinfo_age_get;
 mod fanscenter_basicinfo_gender_get;
 mod fanscenter_basicinfo_province_get;
@@ -393,6 +459,7 @@ mod voice_lyric;
 mod voicelist_detail;
 mod voicelist_list;
 mod voicelist_list_search;
+mod voicelist_my_created;
 mod voicelist_search;
 mod voicelist_trans;
 
@@ -417,11 +484,15 @@ mod listentogether_sync_playlist_get;
 mod vip_growthpoint;
 mod vip_growthpoint_details;
 mod vip_growthpoint_get;
+mod vip_growthpoint_getall;
 mod vip_info;
 mod vip_info_v2;
 mod vip_sign;
+mod vip_sign_detail;
+mod vip_sign_history;
 mod vip_sign_info;
 mod vip_tasks;
+mod vip_tasks_v1;
 mod vip_timemachine;
 
 // ---- 云贝相关 ----
@@ -433,6 +504,9 @@ mod yunbei_rcmd_song_history;
 mod yunbei_receipt;
 mod yunbei_sign;
 mod yunbei_task_finish;
+mod yunbei_task_finish_v1;
+mod yunbei_task_list_v1;
+mod yunbei_task_recommend_song;
 mod yunbei_tasks;
 mod yunbei_tasks_todo;
 mod yunbei_today;
@@ -444,91 +518,19 @@ mod cloud_lyric_get;
 mod cloud_match;
 mod cloud_upload_complete;
 mod cloud_upload_token;
+mod song_cloud_download;
 
-// ---- api-enhanced 同步新增接口 ----
-mod ad_get;
-mod ad_listening_rights;
-mod ad_listening_rights_gain;
-mod artist_new_song_mv_list_v2;
-mod artist_new_song_playall;
-mod banner_v3;
-mod captcha_safe_sent;
-mod captcha_sent_v1;
-mod chart_detail;
-mod chart_song_detail;
-mod comment_add;
-mod comment_default_text;
-mod comment_delete;
-mod comment_hotwall_square_info;
-mod comment_reply;
-mod comment_report;
-mod device_kickoff;
-mod device_list;
-mod deviceinfo_center_upload;
-mod dislike_list;
-mod dj_category_list;
-mod dj_difm_all_style_channel;
-mod dj_difm_channel_subscribe;
-mod dj_difm_channel_unsubscribe;
-mod dj_difm_playing_tracks_list;
-mod dj_difm_subscribe_channels_get;
-mod event_privacy;
-mod event_search;
-mod fans_group_detail;
-mod fans_group_feed_recommend;
-mod fans_group_user_group_detail;
-mod fans_group_user_groups;
-mod lbs_city_code;
-mod like_v1;
-mod listen_data_song_play_rank;
+// ---- 活动相关 ----
 mod middle_play_do_lottery;
 mod middle_play_lottery_remain_chance;
-mod mlog_mycollect;
-mod radio_sport_get;
-mod recommend_category_configs;
-mod recommend_category_set;
-mod recommend_category_songs;
-mod recommend_songs_v1;
-mod relay_play_state_submit;
-mod rep_ugc_activity_collect;
-mod rep_ugc_activity_get;
-mod rep_ugc_exam_info_get;
-mod rep_ugc_exam_question_single_get;
-mod rep_ugc_exam_result_get;
-mod rep_ugc_exam_start;
-mod rep_ugc_exam_submit;
-mod rep_ugc_user_collect_vip;
-mod rep_ugc_user_get;
-mod rep_ugc_user_sign;
-mod rep_ugc_user_vip;
+
+// ---- 助眠解压相关 ----
 mod sati_resource_list;
 mod sati_resource_list_more;
 mod sati_resource_sub;
 mod sati_resource_sub_list;
 mod sati_tag_list;
 mod sati_timescene_resources_get;
-mod search_lyric;
-mod search_song_list_page;
-mod search_suggest_mobile;
-mod search_suggest_pc;
-mod song_cloud_download;
-mod song_copyright_rcmd;
-mod song_creators;
-mod song_like;
-mod song_simi_get;
-mod song_wiki_info;
-mod thinktank_audit_resource_detail;
-mod thinktank_audit_resource_update;
-mod user_event_all;
-mod vip_growthpoint_getall;
-mod vip_sign_detail;
-mod vip_sign_history;
-mod vip_tasks_v1;
-mod voicelist_my_created;
-mod yunbei_task_finish_v1;
-mod yunbei_task_list_v1;
-mod yunbei_task_recommend_song;
-
 // ---- EAPI 工具 ----
 mod eapi_decrypt;
 
