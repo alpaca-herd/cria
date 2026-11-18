@@ -15,6 +15,9 @@
 - 文档准确说明来源链：CRIA 由 CNMPlayer 维护，源自 ncm-api-rs，并持续对照 api-enhanced 同步接口。
 - 发版以 GitHub 为准：在 `main` 上推送 `vX.Y.Z` tag 后，由 CI 将 crate 发布到 crates.io 并创建对应的 GitHub Release。
 
+- 同步 api-enhanced 的十项接口行为变更，包含 xeapi/易盾 token 路径、新声音列表搜索地址、黑胶乐签两步回包、vivid 音质回退以及客户端 NMTID 传递。
+- 新增 82 个 api-enhanced 接口移植；另有 8 个上游模块按 CONTRIBUTING.md 所述有意不移植。
+
 ## [0.1.0] - 2026-11-17
 
 首个独立 crate 版本，从 CNMPlayer 拆出并保留提交历史。
