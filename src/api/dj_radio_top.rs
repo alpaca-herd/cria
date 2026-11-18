@@ -18,7 +18,7 @@ impl ApiClient {
         self.request(
             "/api/expert/worksdata/works/top/get",
             data,
-            query.to_option(CryptoType::Weapi),
+            query.to_option(CryptoType::default()),
         )
         .await
     }

@@ -18,31 +18,27 @@ impl ApiClient {
             _ => "add",
         };
         let resource_type = query.get_or("type", "0");
-        let thread_id = crate::util::config::RESOURCE_TYPE_MAP
-            .get(resource_type.as_str())
-            .map(|prefix| format!("{}{}", prefix, query.get_or("id", "0")))
-            .unwrap_or_default();
-        let mut data = json!({
-            "threadId": thread_id
-        });
+        let thread_id = if resource_type == "6" {
+            query.get_or("threadId", "")
+        } else {
+            crate::util::config::RESOURCE_TYPE_MAP
+                .get(resource_type.as_str())
+                .map(|prefix| format!("{}{}", prefix, query.get_or("id", "0")))
+                .unwrap_or_default()
+        };
+        let mut data = json!({ "threadId": thread_id });
         match action {
-            "add" => {
-                data["content"] = json!(query.get_or("content", ""));
-            }
-            "delete" => {
-                data["commentId"] = json!(query.get_or("commentId", "0"));
-            }
+            "add" => data["content"] = json!(query.get_or("content", "")),
+            "delete" => data["commentId"] = json!(query.get_or("commentId", "0")),
             "reply" => {
                 data["commentId"] = json!(query.get_or("commentId", "0"));
                 data["content"] = json!(query.get_or("content", ""));
             }
             _ => {}
         }
-        self.request(
-            &format!("/api/resource/comments/{}", action),
-            data,
-            query.to_option(CryptoType::Weapi),
-        )
-        .await
+        let mut option = query.to_option(CryptoType::Eapi);
+        option.check_token = true;
+        self.request(&format!("/api/resource/comments/{}", action), data, option)
+            .await
     }
 }

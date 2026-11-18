@@ -37,9 +37,8 @@ impl ApiClient {
             .request(
                 "/api/register/anonimous",
                 data,
-                query.to_option(CryptoType::Weapi),
+                query.to_option(CryptoType::Xeapi),
             )
             .await?;
         Ok(result)
     }
-}

@@ -14,11 +14,9 @@ impl ApiClient {
             "msg": query.get_or("msg", ""),
             "id": query.get_or("id", "")
         });
-        self.request(
-            "/api/share/friends/resource",
-            data,
-            query.to_option(CryptoType::default()),
-        )
-        .await
+        let mut option = query.to_option(CryptoType::Xeapi);
+        option.check_token = true;
+        self.request("/api/share/friends/resource", data, option)
+            .await
     }
 }

@@ -10,11 +10,9 @@ impl ApiClient {
     /// 对应 /yunbei/sign
     pub async fn yunbei_sign(&self, query: &Query) -> Result<ApiResponse> {
         let data = json!({});
-        self.request(
-            "/api/pointmall/user/sign",
-            data,
-            query.to_option(CryptoType::Weapi),
-        )
-        .await
+        let mut option = query.to_option(CryptoType::Xeapi);
+        option.check_token = true;
+        self.request("/api/pointmall/user/sign", data, option)
+            .await
     }
 }
