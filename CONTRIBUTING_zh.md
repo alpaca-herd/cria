@@ -73,6 +73,19 @@ cargo run --example cloudsearch -- 海阔天空   # 需要网络
 
 公共请求行为（`src/request.rs`、`src/crypto.rs`、`src/util/`）的改动会影响所有接口：请补测试，并保持 README 中的客户端约定准确。
 
+## 有意不移植的上游模块
+
+CRIA 有意不把以下 `api-enhanced` 模块作为独立的 `ApiClient` 方法公开：
+
+- `decrypt`：上游服务端调试辅助接口；CRIA 改为提供本地 EAPI 解密实现。
+- `register_checktoken_v2` / `register_checktoken_v3`：易盾 token 获取已内置在请求层。
+- `register_xeapikey`：xeapi 公钥注册已内置在请求层。
+- `register_neapikey`：需要上游独立的 `neapi` 加密与密钥轮换子系统，CRIA 尚未实现。
+- `scrobble_v1`：需要上游 NCBL 加密格式，CRIA 尚未实现。
+- `song_url_match` / `song_url_ncmget`：第三方解灰辅助接口，不属于 API 客户端边界。
+
+这些是明确的范围边界，不是遗漏的模块。重新考虑其中任何一项时，需要同时提出设计方案与验证计划。
+
 ## 代码约定
 
 - **显式导入。** 写明所用条目，不要新增 glob 导入。

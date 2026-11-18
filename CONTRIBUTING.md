@@ -93,6 +93,19 @@ New and changed endpoints follow the upstream project; CRIA does not invent endp
 Changes to shared request behavior (`src/request.rs`, `src/crypto.rs`, `src/util/`) affect every endpoint;
 add tests for them and keep the client contract in the README accurate.
 
+## Intentionally omitted upstream modules
+
+CRIA intentionally does not expose these `api-enhanced` modules as independent `ApiClient` methods:
+
+- `decrypt`: an upstream server-side debugging helper; CRIA exposes its local EAPI decrypt implementation instead.
+- `register_checktoken_v2` / `register_checktoken_v3`: anti-cheat token acquisition is internal to the request layer.
+- `register_xeapikey`: xeapi public-key registration is internal to the request layer.
+- `register_neapikey`: requires the separate upstream `neapi` encryption and key-rotation subsystem, which CRIA does not implement.
+- `scrobble_v1`: requires the upstream NCBL encryption format, which CRIA does not implement.
+- `song_url_match` / `song_url_ncmget`: third-party song-unblocking helpers, not API client endpoints.
+
+These omissions are deliberate scope boundaries, not forgotten modules. Reconsider them only with a corresponding design and verification plan.
+
 ## Code conventions
 
 - **Import explicitly.** Name the items you use; do not add glob imports.
