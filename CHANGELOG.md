@@ -20,6 +20,9 @@ public API. `CHANGELOG_zh.md` carries the same entries in Simplified Chinese.
 - Releases are cut from GitHub: a `vX.Y.Z` tag on `main` publishes the crate to crates.io through CI and
   creates the matching GitHub Release.
 
+- Synced ten endpoint behavior changes with api-enhanced, including xeapi/check-token routes, the new voice-list search path, VIP sign-in's two-step response, vivid URL fallback handling, and client-side NMTID propagation.
+- Added 82 api-enhanced endpoint ports. Eight upstream modules remain intentionally omitted as documented in CONTRIBUTING.md.
+
 ## [0.1.0] - 2026-11-17
 
 First release as a standalone crate, split out of CNMPlayer with its history preserved.

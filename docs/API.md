@@ -4637,6 +4637,7 @@ let result = client.vip_info_v2(&query).await.unwrap();
 ### vip_sign - 黑胶乐签打卡
 
 说明 : 登录后调用此接口,进行黑胶乐签打卡
+返回体包括 `taskSign`（任务签到）、`checkinDetail`（当日打卡详情）和 `signed`；两步均成功才算打卡成功。
 
 **方法名 :** `vip_sign`
 
@@ -5352,6 +5353,7 @@ let result = client.digital_album_sales(&query).await.unwrap();
 ### voice_upload - 播客上传声音
 
 说明 : 可以上传声音到播客
+调用方提供音频文件名与字节。已有封面时传 `coverImgId`；需要上传新封面时改用 `voice_upload_with_cover`，无需再传 `coverImgId`。
 
 **必选参数 :** `voiceListId` : 播客 id ; `coverImgId` : 播客封面 ; `categoryId` : 分类 id ; `secondCategoryId` : 次级分类 id ; `description` : 声音介绍
 
@@ -5368,7 +5370,10 @@ let query = Query::new()
     .param("categoryId", "1")
     .param("secondCategoryId", "2")
     .param("description", "声音介绍");
-let result = client.voice_upload(&query).await.unwrap();
+let result = client.voice_upload(&query, "voice.mp3", audio_bytes, Some("audio/mpeg")).await?;
+// 或上传新封面：
+// client.voice_upload_with_cover(&query, "voice.mp3", audio_bytes, Some("audio/mpeg"),
+//     "cover.jpg", image_bytes, Some("image/jpeg")).await?;
 ```
 
 ---
@@ -5464,7 +5469,7 @@ let result = client.voicelist_detail(&query).await.unwrap();
 
 说明 : 可以获取播客列表
 
-**可选参数 :** `limit` : 取出数量,默认为 200 ; `offset` : 偏移数量 ; `podcastName` : 播客名称
+**可选参数 :** `keyword` : 搜索关键词 ; `limit` : 数量，默认 10 ; `offset` : 偏移量，默认 30
 
 **方法名 :** `voicelist_search`
 
@@ -6424,6 +6429,95 @@ let result = client.verify_qrcodestatus(&query).await.unwrap();
 ```
 
 ---
+
+## api-enhanced 新增接口
+
+以下方法同步自 [api-enhanced `75bf2e5`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/tree/75bf2e5/module)，均通过 `ApiClient` 与 `Query` 调用。表中列出参数名，不代表所有参数都必填；默认值与调用条件见各方法的 [Rust API 文档](https://docs.rs/cria-api/latest/cria/struct.ApiClient.html)及对应的上游模块。涉及账号的读取或写入仍受服务端权限约束。
+
+| 方法 | 用途 | `Query` 参数 |
+| --- | --- | --- |
+| `ad_get` | 获取广告 | `type_ids` |
+| `ad_listening_rights` | 获取免费听时长状态 | — |
+| `ad_listening_rights_gain` | 领取广告权益（仅接受实际广告互动参数，不自动生成时间戳） | `reqUid`, `exposureTime`, `clickTime`, `appInfo`, `uid`, `extraRightsType`, `source`, `extraRightsGainMethod`, `extraRightsGainDuration`, `nextRightsGainDuration`, `rightsGainType`, `rightsGainDuration`, `gainMethodStep`, `generalRightsInfo`, `rightsExtJson`, `contextInfo`, `installed`, `sniffTime`, `creativeType`, `rightsGainMethod`, `playContinuously` |
+| `artist_new_song_mv_list_v2` | 获取关注歌手的新歌曲和 MV | `startTimestamp`, `before`, `sourceType`, `limit`, `firstRequest` |
+| `artist_new_song_playall` | 获取所有关注歌手最近的 50 首新歌 | — |
+| `banner_v3` | 首页轮播（v3） | `clientType` |
+| `captcha_safe_sent` | 发送安全验证码 | `ctcode` |
+| `captcha_sent_v1` | 发送验证码 | `phone`, `ctcode` |
+| `chart_detail` | 获取指定维度音乐排行榜详情 | `chartCode`, `targetId`, `targetType` |
+| `chart_song_detail` | 获取指定维度音乐排行榜列表 | `chartCode`, `targetId`, `targetType` |
+| `comment_add` | 发送评论 | `type`, `id`, `content` |
+| `comment_default_text` | 评论默认文案 | `threadId` |
+| `comment_delete` | 删除评论 | `type`, `id`, `cid` |
+| `comment_hotwall_square_info` | 热评墙广场信息 | — |
+| `comment_reply` | 发送评论 | `type`, `id`, `cid`, `content` |
+| `comment_report` | 举报评论 | `id`, `cid`, `reason` |
+| `device_kickoff` | 强制下线设备 | `captcha`, `deviceKey` |
+| `device_list` | 登录设备列表 | — |
+| `deviceinfo_center_upload` | 上报设备中心设备名称 | `name`, `deviceName` |
+| `dislike_list` | 获取「不感兴趣」歌曲列表 | — |
+| `dj_category_list` | 播客分类列表（新版） | — |
+| `dj_difm_all_style_channel` | DIFM电台 - 分类 | `sources` |
+| `dj_difm_channel_subscribe` | DIFM电台 - 收藏频道 | `id` |
+| `dj_difm_channel_unsubscribe` | DIFM电台 - 取消收藏频道 | `id` |
+| `dj_difm_playing_tracks_list` | DIFM电台 - 播放列表 | `limit`, `source`, `channelId` |
+| `dj_difm_subscribe_channels_get` | DIFM电台 - 收藏列表 | `sources` |
+| `event_privacy` | 修改本人动态的可见权限 | `evId`, `privacy` |
+| `event_search` | 动态搜索 | `keywords`, `limit`, `offset`, `keyword` |
+| `fans_group_detail` | 乐迷团详情 | `id`, `scene`, `groupId` |
+| `fans_group_feed_recommend` | 乐迷团推荐笔记 | `groupId`, `cursor`, `size`, `artistSelf`, `fansGroupId` |
+| `fans_group_user_group_detail` | 用户所处乐迷团详情 | `id`, `groupId` |
+| `fans_group_user_groups` | 获取当前登录用户加入的全部歌手乐迷团列表 | — |
+| `lbs_city_code` | 多级行政区划数据获取接口 | `bizCode` |
+| `like_v1` | 红心与取消红心歌曲- v1 | `like`, `id` |
+| `listen_data_song_play_rank` | 听歌足迹 - 歌曲播放排行 (Top20) | `type`, `endTime` |
+| `middle_play_do_lottery` | 云小编每日抽奖 | `activityId`, `drawCount` |
+| `middle_play_lottery_remain_chance` | 云小编抽奖剩余次数查询 | `activityId` |
+| `mlog_mycollect` | 我收藏的播客（Mlog）——按时间倒序分页 | `time`, `limit`, `type` |
+| `radio_sport_get` | 跑步漫游 | `bpm` |
+| `recommend_category_configs` | 每日风格推荐场景配置列表获取 | — |
+| `recommend_category_set` | 每日风格推荐场景配置设置 | `tags`, `category` |
+| `recommend_category_songs` | 每日推荐风格歌曲 | — |
+| `recommend_songs_v1` | 每日推荐歌曲 - v1 | `ispush` |
+| `relay_play_state_submit` | 提交歌曲播放状态 | `id`, `sessionId`, `progress`, `playMode`, `type` |
+| `rep_ugc_activity_collect` | 云小编领取任务积分 | `activityId` |
+| `rep_ugc_activity_get` | 云小编活动信息 | — |
+| `rep_ugc_exam_info_get` | 云小编考试状态 | `examType` |
+| `rep_ugc_exam_question_single_get` | 云小编考试取题 | `examType`, `taskId` |
+| `rep_ugc_exam_result_get` | 云小编考试结果 | `examType`, `taskId` |
+| `rep_ugc_exam_start` | 云小编考试开始 | `examType` |
+| `rep_ugc_exam_submit` | 云小编考试提交 | `examType`, `taskId`, `questionId`, `answer` |
+| `rep_ugc_user_collect_vip` | 云小编领取一日会员 | `activityId` |
+| `rep_ugc_user_get` | 云小编获取用户详情 | — |
+| `rep_ugc_user_sign` | 云小编每日签到 | — |
+| `rep_ugc_user_vip` | 云小编查询会员任务状态 | — |
+| `sati_resource_list` | 助眠解压 - 获取标签下资源列表 | `tag` |
+| `sati_resource_list_more` | 助眠解压 - 查看同类推荐 | `id` |
+| `sati_resource_sub` | 助眠解压 - 收藏 | `cancel`, `id` |
+| `sati_resource_sub_list` | 助眠解压 - 收藏列表 | — |
+| `sati_tag_list` | 助眠解压 - 标签列表 | — |
+| `sati_timescene_resources_get` | 助眠解压 - 特定时间场景下的推荐资源 | — |
+| `search_lyric` | 按歌词搜索 | `keywords`, `limit`, `offset`, `keyword` |
+| `search_song_list_page` | 新版单曲搜索（分页） | `keywords`, `limit`, `offset`, `keyword`, `scene` |
+| `search_suggest_mobile` | 搜索联想（App 移动端版：直hit歌曲卡 + 联想词 + 热搜/原唱标签） | `keywords`, `keyword` |
+| `search_suggest_pc` | 搜索建议pc端 | `keyword` |
+| `song_cloud_download` | 从云盘获取歌曲下载链接 | `id` |
+| `song_copyright_rcmd` | 灰色歌曲的其他版本推荐 | `id`, `songid` |
+| `song_creators` | 歌曲创作者信息 | `id` |
+| `song_like` | 喜欢歌曲 | `like`, `id`, `uid` |
+| `song_simi_get` | 插播相似歌曲 | `id` |
+| `song_wiki_info` | 歌曲百科 | `id` |
+| `thinktank_audit_resource_detail` | 云小编获取任务 | `type` |
+| `thinktank_audit_resource_update` | 云小编提交任务 | `taskId`, `judgement`, `type` |
+| `user_event_all` | 获取当前登录用户可被上游枚举的全部动态 | — |
+| `vip_growthpoint_getall` | 一键领取所有会员成长值 | — |
+| `vip_sign_detail` | 黑胶乐签打卡详情 | `timestamp` |
+| `vip_sign_history` | 黑胶乐签打卡历史 / 状态查询 | `type` |
+| `vip_tasks_v1` | 会员任务 - 新版 | `id` |
+| `voicelist_my_created` | 我创建的播客声音 | `limit` |
+| `yunbei_task_finish_v1` | 云贝广告任务 - 完成任务领取云贝 | `yunbeiAmount` |
+| `yunbei_task_list_v1` | 云贝广告任务 - 查询今日任务状态 | — |
+| `yunbei_task_recommend_song` | 云贝广告任务 - 获取推荐歌曲 | `offset`, `limit` |
 
 ## 致谢 & License
 
