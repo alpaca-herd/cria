@@ -42,6 +42,21 @@ struct SharedState {
     cookies: Mutex<CookieJar>,
     xeapi: Mutex<XeapiState>,
 }
+struct NmtidState {
+    value: Option<String>,
+    retries_left: u8,
+}
+
+static NMTID_STATE: LazyLock<Mutex<NmtidState>> = LazyLock::new(|| {
+    Mutex::new(NmtidState {
+        value: None,
+        retries_left: 3,
+    })
+});
+
+fn fallback_nmtid() -> String {
+    format!("00O{}", random_hex(19))
+}
 
 impl std::fmt::Debug for SharedState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -295,6 +310,11 @@ impl ApiClient {
                 "API request data must be a JSON object".to_string(),
             ));
         }
+        let crypto_type = if options.crypto == CryptoType::Eapi && !ENCRYPT {
+            CryptoType::Api
+        } else {
+            options.crypto.clone()
+        };
         let mut headers = HeaderMap::new();
         // weapi 下面会换成自己的 Referer；其余加密方式沿用网页端 Referer。
         headers.insert(REFERER, HeaderValue::from_static(WEB_REFERER));
@@ -373,11 +393,22 @@ impl ApiClient {
             .entry("appver".to_string())
             .or_insert_with(|| os.appver.to_string());
 
-        // 非登录接口注入 NMTID
-        if !uri.contains("login") {
-            cookie_map
-                .entry("NMTID".to_string())
-                .or_insert_with(|| random_hex(8));
+        // 上游先尝试在 eapi 请求中让服务端下发 NMTID；其他请求在三次探测后使用本地兜底值。
+        let nmtid_probe = if crypto_type == CryptoType::Eapi && !cookie_map.contains_key("NMTID") {
+            let state = lock(&NMTID_STATE);
+            state.value.is_none() && state.retries_left > 0
+        } else {
+            false
+        };
+        {
+            let state = lock(&NMTID_STATE);
+            if let Some(nmtid) = state.value.clone() {
+                cookie_map.entry("NMTID".to_string()).or_insert(nmtid);
+            } else if state.retries_left == 0 || crypto_type != CryptoType::Eapi {
+                cookie_map
+                    .entry("NMTID".to_string())
+                    .or_insert_with(fallback_nmtid);
+            }
         }
 
         // 未登录时注入匿名 token
@@ -391,12 +422,7 @@ impl ApiClient {
 
         headers.insert(COOKIE, header_value(&cookie_obj_to_string(&cookie_map)));
 
-        // 确定加密方式
-        let crypto_type = if options.crypto == CryptoType::Eapi && !ENCRYPT {
-            CryptoType::Api
-        } else {
-            options.crypto.clone()
-        };
+        // `crypto_type` is resolved before cookie processing so NMTID probing matches upstream.
 
         // 与上游一致：所有加密方式都带 e_r；只有 eapi/weapi 的回包会按 e_r 加密。
         let mut data = data;
@@ -690,6 +716,28 @@ impl ApiClient {
             })
             .await
             .map_err(|_| NcmError::Timeout { timeout })??;
+        if nmtid_probe {
+            let mut state = lock(&NMTID_STATE);
+            if state.retries_left > 0 {
+                state.retries_left -= 1;
+                for set_cookie in &resp_cookies {
+                    if let Some((name, value)) = set_cookie.split_once('=')
+                        && name.trim().eq_ignore_ascii_case("NMTID")
+                    {
+                        state.value = Some(
+                            value
+                                .split(';')
+                                .next()
+                                .unwrap_or_default()
+                                .trim()
+                                .to_string(),
+                        );
+                        break;
+                    }
+                }
+            }
+        }
+
         // 与浏览器 cookie jar 一致：只要拿到 HTTP 响应就合并 Set-Cookie，与业务码无关。
         if let Some(epoch) = jar_epoch
             && !resp_cookies.is_empty()

@@ -203,6 +203,14 @@ fn header_line<'a>(request: &'a str, name: &str) -> Option<&'a str> {
         .find_map(|line| line.strip_prefix(&format!("{name}: ")))
 }
 
+#[test]
+fn fallback_nmtid_matches_upstream_shape() {
+    let nmtid = fallback_nmtid();
+    assert!(nmtid.starts_with("00O"));
+    assert_eq!(nmtid.len(), 41);
+    assert!(nmtid[3..].chars().all(|ch| ch.is_ascii_hexdigit()));
+}
+
 #[compio::test]
 async fn library_headers_do_not_inherit_injected_client_defaults() {
     let mut defaults = HeaderMap::new();
