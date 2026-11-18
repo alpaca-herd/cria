@@ -4637,6 +4637,7 @@ let result = client.vip_info_v2(&query).await.unwrap();
 ### vip_sign - 黑胶乐签打卡
 
 说明 : 登录后调用此接口,进行黑胶乐签打卡
+返回体包括 `taskSign`（任务签到）、`checkinDetail`（当日打卡详情）和 `signed`；两步均成功才算打卡成功。
 
 **方法名 :** `vip_sign`
 
@@ -5352,6 +5353,7 @@ let result = client.digital_album_sales(&query).await.unwrap();
 ### voice_upload - 播客上传声音
 
 说明 : 可以上传声音到播客
+调用方提供音频文件名与字节。已有封面时传 `coverImgId`；需要上传新封面时改用 `voice_upload_with_cover`，无需再传 `coverImgId`。
 
 **必选参数 :** `voiceListId` : 播客 id ; `coverImgId` : 播客封面 ; `categoryId` : 分类 id ; `secondCategoryId` : 次级分类 id ; `description` : 声音介绍
 
@@ -5368,7 +5370,10 @@ let query = Query::new()
     .param("categoryId", "1")
     .param("secondCategoryId", "2")
     .param("description", "声音介绍");
-let result = client.voice_upload(&query).await.unwrap();
+let result = client.voice_upload(&query, "voice.mp3", audio_bytes, Some("audio/mpeg")).await?;
+// 或上传新封面：
+// client.voice_upload_with_cover(&query, "voice.mp3", audio_bytes, Some("audio/mpeg"),
+//     "cover.jpg", image_bytes, Some("image/jpeg")).await?;
 ```
 
 ---
@@ -5464,7 +5469,7 @@ let result = client.voicelist_detail(&query).await.unwrap();
 
 说明 : 可以获取播客列表
 
-**可选参数 :** `limit` : 取出数量,默认为 200 ; `offset` : 偏移数量 ; `podcastName` : 播客名称
+**可选参数 :** `keyword` : 搜索关键词 ; `limit` : 数量，默认 10 ; `offset` : 偏移量，默认 30
 
 **方法名 :** `voicelist_search`
 

@@ -1,5 +1,5 @@
 use super::Query;
-use crate::error::Result;
+use crate::error::{NcmError, Result};
 /// 上传音频（声音）
 /// 对应 Node.js module/voice_upload.js
 ///
@@ -37,22 +37,37 @@ impl ApiClient {
             )
             .await?;
         let result = &token_res.body["result"];
-        let object_key = result["objectKey"].as_str().unwrap_or_default();
-        let token = result["token"].as_str().unwrap_or_default();
-        let doc_id = result["docId"].clone();
+        let required = |field: &str| {
+            result[field]
+                .as_str()
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| NcmError::Unknown(format!("NOS token response omitted {field}")))
+        };
+        let object_key = required("objectKey")?;
+        let token = required("token")?;
+        let doc_id = &result["docId"];
+        if !doc_id.is_number() && doc_id.as_str().is_none_or(str::is_empty) {
+            return Err(NcmError::Unknown("NOS token response omitted docId".into()));
+        }
         let upload_url = format!(
             "https://nosup-hz1.127.net/yyimgs/{}?offset=0&complete=true&version=1.0",
             object_key
         );
-        self.client
+        let response = self
+            .client
             .post(&upload_url)?
             .headers(direct_request_headers())
             .header("x-nos-token", token)?
             .header("Content-Type", image_mimetype.unwrap_or("image/jpeg"))?
             .body(image_data)
             .send()
-            .await
-            .map_err(crate::error::NcmError::Http)?;
+            .await?;
+        if !response.status().is_success() {
+            return Err(NcmError::from_api(
+                i64::from(response.status().as_u16()),
+                "NOS cover upload failed".into(),
+            ));
+        }
         Ok(ApiResponse {
             status: 200,
             body: json!({
@@ -78,12 +93,12 @@ impl ApiClient {
         let cover = self
             .upload_voice_cover(query, cover_name, cover_data, cover_mimetype)
             .await?;
-        let cover_id = cover.body["imgId"].to_string();
-        let cover_id = cover_id.trim_matches('"');
+        let id = &cover.body["imgId"];
+        let cover_id = id.as_str().map_or_else(|| id.to_string(), str::to_owned);
         let mut upload_query = query.clone();
         upload_query
             .params
-            .insert("coverImgId".to_string(), cover_id.to_string());
+            .insert("coverImgId".to_string(), cover_id);
         self.voice_upload(
             &upload_query,
             file_name,
@@ -92,6 +107,7 @@ impl ApiClient {
         )
         .await
     }
+
     /// 上传音频文件
     ///
     /// query 参数:

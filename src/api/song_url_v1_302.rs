@@ -9,11 +9,13 @@ fn extract_url(body: &Value) -> Option<String> {
     body.get("data").and_then(|data| {
         data.get("url")
             .and_then(Value::as_str)
+            .filter(|url| !url.is_empty())
             .map(str::to_string)
             .or_else(|| {
                 data.get(0)
                     .and_then(|item| item.get("url"))
                     .and_then(Value::as_str)
+                    .filter(|url| !url.is_empty())
                     .map(str::to_string)
             })
     })
