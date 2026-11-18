@@ -3,7 +3,7 @@ use crate::error::Result;
 /// 获取客户端歌曲下载链接 - v1 (302 重定向)
 /// 对应 Node.js module/song_url_v1_302.js
 use crate::request::{ApiClient, ApiResponse, CryptoType};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 fn extract_url(body: &Value) -> Option<String> {
     body.get("data").and_then(|data| {
@@ -55,11 +55,7 @@ impl ApiClient {
             fallback_data["immerseType"] = json!("c51");
         }
         let fallback = self
-            .request(
-                "/api/song/enhance/player/url/v1",
-                fallback_data,
-                option,
-            )
+            .request("/api/song/enhance/player/url/v1", fallback_data, option)
             .await?;
         match extract_url(&fallback.body) {
             Some(url) => Ok(ApiResponse {

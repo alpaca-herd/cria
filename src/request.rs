@@ -49,12 +49,14 @@ struct NmtidState {
     retries_left: u8,
 }
 
-static NMTID_STATE: LazyLock<Mutex<NmtidState>> = LazyLock::new(|| {
-    Mutex::new(NmtidState {
-        value: None,
-        retries_left: 3,
-    })
-});
+impl NmtidState {
+    fn for_epoch(epoch: u64) -> Self {
+        Self {
+            epoch,
+            retries_left: 3,
+        }
+    }
+}
 
 impl Default for NmtidState {
     fn default() -> Self {
@@ -417,6 +419,11 @@ impl ApiClient {
                         cookie_map.insert("NMTID".to_string(), fallback_nmtid());
                     }
                 }
+            }
+            if crypto_type != CryptoType::Eapi {
+                cookie_map
+                    .entry("NMTID".to_string())
+                    .or_insert_with(fallback_nmtid);
             }
         }
 

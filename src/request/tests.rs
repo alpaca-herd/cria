@@ -212,6 +212,50 @@ fn fallback_nmtid_matches_upstream_shape() {
 }
 
 #[compio::test]
+async fn eapi_uses_server_nmtid_and_falls_back_after_three_probes() {
+    let http = cyper::Client::builder().no_proxy().build().unwrap();
+    let api = ApiClient::new(None, http);
+    let server_nmtid = "HTTP/1.1 200 OK\r\nSet-Cookie: NMTID=issued; Path=/\r\nContent-Length: 12\r\nConnection: close\r\n\r\n{\"code\":200}";
+    for (i, (reply, expected)) in [
+        (server_nmtid, None),
+        (EMPTY_OK, Some("nmtid=issued")),
+        (EMPTY_OK, None),
+        (EMPTY_OK, None),
+        (EMPTY_OK, None),
+        (EMPTY_OK, Some("nmtid=00o")),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        if i == 2 {
+            api.clear_cookie();
+        }
+        let (address, server) = serve_once(reply, None);
+        api.request(
+            "/api/login/probe",
+            serde_json::json!({}),
+            RequestOption {
+                crypto: CryptoType::Eapi,
+                domain: Some(address),
+                ..RequestOption::default()
+            },
+        )
+        .await
+        .unwrap();
+        let request = server.await.unwrap();
+        let cookie = header_line(&request, "cookie").unwrap();
+        assert_eq!(
+            cookie.contains("nmtid="),
+            expected.is_some(),
+            "request {i}: {cookie}"
+        );
+        if let Some(expected) = expected {
+            assert!(cookie.contains(expected), "{cookie}");
+        }
+    }
+}
+
+#[compio::test]
 async fn library_headers_do_not_inherit_injected_client_defaults() {
     let mut defaults = HeaderMap::new();
     defaults.insert(USER_AGENT, HeaderValue::from_static("Host-App/1.0"));

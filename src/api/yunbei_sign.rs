@@ -12,7 +12,6 @@ impl ApiClient {
         let data = json!({});
         let mut option = query.to_option(CryptoType::Xeapi);
         option.check_token = true;
-        self.request("/api/pointmall/user/sign", data, option)
-            .await
+        self.request("/api/pointmall/user/sign", data, option).await
     }
 }

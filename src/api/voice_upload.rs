@@ -8,7 +8,6 @@ use crate::error::{NcmError, Result};
 use crate::request::{ApiClient, ApiResponse, CryptoType, direct_request_headers};
 use serde_json::json;
 
-
 impl ApiClient {
     /// 上传声音封面图片并返回 `imgId` 与 `url_pre`。
     ///
@@ -99,13 +98,8 @@ impl ApiClient {
         upload_query
             .params
             .insert("coverImgId".to_string(), cover_id);
-        self.voice_upload(
-            &upload_query,
-            file_name,
-            file_data,
-            file_mimetype,
-        )
-        .await
+        self.voice_upload(&upload_query, file_name, file_data, file_mimetype)
+            .await
     }
 
     /// 上传音频文件
