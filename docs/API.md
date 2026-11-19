@@ -43,6 +43,7 @@
 - [一起听](#一起听)
 - [广播电台](#广播电台)
 - [其他](#其他)
+- [api-enhanced 新增接口](#api-enhanced-新增接口)
 
 ---
 
@@ -1944,6 +1945,29 @@ let result = client.related_playlist(&query).await?;
 ---
 
 ## 评论相关
+
+### comment - 发送、删除或回复评论
+
+说明 : 兼容上游 `module/comment.js` 的复合评论入口。`t=1` 发送、`t=0` 删除、`t=2` 回复；`type=6` 时必须传 `threadId`，其他资源类型由 `type` 与 `id` 组合线程 ID。请求使用 eapi，并在发送前获取实时 v3 易盾 token。
+
+**参数 :** `t`, `type`, `id`, `threadId`, `commentId`, `content`
+
+**方法名 :** `comment`
+
+**Rust 调用例子 :**
+
+```rust
+let query = Query::new()
+    .param("t", "1")
+    .param("type", "0")
+    .param("id", "186016")
+    .param("content", "很好听");
+let result = client.comment(&query).await?;
+```
+
+**上游模块 :** [`module/comment.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/comment.js)
+
+---
 
 ### 歌曲评论
 
@@ -5371,10 +5395,55 @@ let query = Query::new()
     .param("secondCategoryId", "2")
     .param("description", "声音介绍");
 let result = client.voice_upload(&query, "voice.mp3", audio_bytes, Some("audio/mpeg")).await?;
-// 或上传新封面：
-// client.voice_upload_with_cover(&query, "voice.mp3", audio_bytes, Some("audio/mpeg"),
-//     "cover.jpg", image_bytes, Some("image/jpeg")).await?;
 ```
+
+---
+
+### upload_voice_cover - 上传声音封面
+
+说明 : 申请声音封面上传 token，并将调用方提供的图片字节上传到 NOS，返回 `imgId` 与 `url_pre`。
+
+**参数 :** `query` : 通用请求参数 ; `image_name` : 图片文件名 ; `image_data` : 图片字节 ; `image_mimetype` : 图片 MIME 类型，默认 `image/jpeg`
+
+**方法名 :** `upload_voice_cover`
+
+**Rust 调用例子 :**
+
+```rust
+let result = client
+    .upload_voice_cover(&query, "cover.jpg", image_bytes, Some("image/jpeg"))
+    .await?;
+```
+
+**上游模块 :** [`module/voice_upload.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/voice_upload.js)
+
+---
+
+### voice_upload_with_cover - 上传声音并先上传封面
+
+说明 : 先调用 `upload_voice_cover`，再调用 `voice_upload`；调用方无需在 `Query` 中传 `coverImgId`。
+
+**参数 :** `query` : 通用请求参数 ; `file_name` / `file_data` / `file_mimetype` : 音频文件信息 ; `cover_name` / `cover_data` / `cover_mimetype` : 封面文件信息
+
+**方法名 :** `voice_upload_with_cover`
+
+**Rust 调用例子 :**
+
+```rust
+let result = client
+    .voice_upload_with_cover(
+        &query,
+        "voice.mp3",
+        audio_bytes,
+        Some("audio/mpeg"),
+        "cover.jpg",
+        image_bytes,
+        Some("image/jpeg"),
+    )
+    .await?;
+```
+
+**上游模块 :** [`module/voice_upload.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/voice_upload.js)
 
 ---
 
@@ -6432,92 +6501,1556 @@ let result = client.verify_qrcodestatus(&query).await.unwrap();
 
 ## api-enhanced 新增接口
 
-以下方法同步自 [api-enhanced `75bf2e5`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/tree/75bf2e5/module)，均通过 `ApiClient` 与 `Query` 调用。表中列出参数名，不代表所有参数都必填；默认值与调用条件见各方法的 [Rust API 文档](https://docs.rs/cria-api/latest/cria/struct.ApiClient.html)及对应的上游模块。涉及账号的读取或写入仍受服务端权限约束。
+以下方法同步自 [api-enhanced `75bf2e5`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/tree/75bf2e5/module)。`Query` 参数均以字符串传入，示例中的标识、验证码和上下文由调用方提供。涉及账号状态的接口由服务端校验登录态和权限。
 
-| 方法 | 用途 | `Query` 参数 |
-| --- | --- | --- |
-| `ad_get` | 获取广告 | `type_ids` |
-| `ad_listening_rights` | 获取免费听时长状态 | — |
-| `ad_listening_rights_gain` | 领取广告权益（仅接受实际广告互动参数，不自动生成时间戳） | `reqUid`, `exposureTime`, `clickTime`, `appInfo`, `uid`, `extraRightsType`, `source`, `extraRightsGainMethod`, `extraRightsGainDuration`, `nextRightsGainDuration`, `rightsGainType`, `rightsGainDuration`, `gainMethodStep`, `generalRightsInfo`, `rightsExtJson`, `contextInfo`, `installed`, `sniffTime`, `creativeType`, `rightsGainMethod`, `playContinuously` |
-| `artist_new_song_mv_list_v2` | 获取关注歌手的新歌曲和 MV | `startTimestamp`, `before`, `sourceType`, `limit`, `firstRequest` |
-| `artist_new_song_playall` | 获取所有关注歌手最近的 50 首新歌 | — |
-| `banner_v3` | 首页轮播（v3） | `clientType` |
-| `captcha_safe_sent` | 发送安全验证码 | `ctcode` |
-| `captcha_sent_v1` | 发送验证码 | `phone`, `ctcode` |
-| `chart_detail` | 获取指定维度音乐排行榜详情 | `chartCode`, `targetId`, `targetType` |
-| `chart_song_detail` | 获取指定维度音乐排行榜列表 | `chartCode`, `targetId`, `targetType` |
-| `comment_add` | 发送评论 | `type`, `id`, `content` |
-| `comment_default_text` | 评论默认文案 | `threadId` |
-| `comment_delete` | 删除评论 | `type`, `id`, `cid` |
-| `comment_hotwall_square_info` | 热评墙广场信息 | — |
-| `comment_reply` | 发送评论 | `type`, `id`, `cid`, `content` |
-| `comment_report` | 举报评论 | `id`, `cid`, `reason` |
-| `device_kickoff` | 强制下线设备 | `captcha`, `deviceKey` |
-| `device_list` | 登录设备列表 | — |
-| `deviceinfo_center_upload` | 上报设备中心设备名称 | `name`, `deviceName` |
-| `dislike_list` | 获取「不感兴趣」歌曲列表 | — |
-| `dj_category_list` | 播客分类列表（新版） | — |
-| `dj_difm_all_style_channel` | DIFM电台 - 分类 | `sources` |
-| `dj_difm_channel_subscribe` | DIFM电台 - 收藏频道 | `id` |
-| `dj_difm_channel_unsubscribe` | DIFM电台 - 取消收藏频道 | `id` |
-| `dj_difm_playing_tracks_list` | DIFM电台 - 播放列表 | `limit`, `source`, `channelId` |
-| `dj_difm_subscribe_channels_get` | DIFM电台 - 收藏列表 | `sources` |
-| `event_privacy` | 修改本人动态的可见权限 | `evId`, `privacy` |
-| `event_search` | 动态搜索 | `keywords`, `limit`, `offset`, `keyword` |
-| `fans_group_detail` | 乐迷团详情 | `id`, `scene`, `groupId` |
-| `fans_group_feed_recommend` | 乐迷团推荐笔记 | `groupId`, `cursor`, `size`, `artistSelf`, `fansGroupId` |
-| `fans_group_user_group_detail` | 用户所处乐迷团详情 | `id`, `groupId` |
-| `fans_group_user_groups` | 获取当前登录用户加入的全部歌手乐迷团列表 | — |
-| `lbs_city_code` | 多级行政区划数据获取接口 | `bizCode` |
-| `like_v1` | 红心与取消红心歌曲- v1 | `like`, `id` |
-| `listen_data_song_play_rank` | 听歌足迹 - 歌曲播放排行 (Top20) | `type`, `endTime` |
-| `middle_play_do_lottery` | 云小编每日抽奖 | `activityId`, `drawCount` |
-| `middle_play_lottery_remain_chance` | 云小编抽奖剩余次数查询 | `activityId` |
-| `mlog_mycollect` | 我收藏的播客（Mlog）——按时间倒序分页 | `time`, `limit`, `type` |
-| `radio_sport_get` | 跑步漫游 | `bpm` |
-| `recommend_category_configs` | 每日风格推荐场景配置列表获取 | — |
-| `recommend_category_set` | 每日风格推荐场景配置设置 | `tags`, `category` |
-| `recommend_category_songs` | 每日推荐风格歌曲 | — |
-| `recommend_songs_v1` | 每日推荐歌曲 - v1 | `ispush` |
-| `relay_play_state_submit` | 提交歌曲播放状态 | `id`, `sessionId`, `progress`, `playMode`, `type` |
-| `rep_ugc_activity_collect` | 云小编领取任务积分 | `activityId` |
-| `rep_ugc_activity_get` | 云小编活动信息 | — |
-| `rep_ugc_exam_info_get` | 云小编考试状态 | `examType` |
-| `rep_ugc_exam_question_single_get` | 云小编考试取题 | `examType`, `taskId` |
-| `rep_ugc_exam_result_get` | 云小编考试结果 | `examType`, `taskId` |
-| `rep_ugc_exam_start` | 云小编考试开始 | `examType` |
-| `rep_ugc_exam_submit` | 云小编考试提交 | `examType`, `taskId`, `questionId`, `answer` |
-| `rep_ugc_user_collect_vip` | 云小编领取一日会员 | `activityId` |
-| `rep_ugc_user_get` | 云小编获取用户详情 | — |
-| `rep_ugc_user_sign` | 云小编每日签到 | — |
-| `rep_ugc_user_vip` | 云小编查询会员任务状态 | — |
-| `sati_resource_list` | 助眠解压 - 获取标签下资源列表 | `tag` |
-| `sati_resource_list_more` | 助眠解压 - 查看同类推荐 | `id` |
-| `sati_resource_sub` | 助眠解压 - 收藏 | `cancel`, `id` |
-| `sati_resource_sub_list` | 助眠解压 - 收藏列表 | — |
-| `sati_tag_list` | 助眠解压 - 标签列表 | — |
-| `sati_timescene_resources_get` | 助眠解压 - 特定时间场景下的推荐资源 | — |
-| `search_lyric` | 按歌词搜索 | `keywords`, `limit`, `offset`, `keyword` |
-| `search_song_list_page` | 新版单曲搜索（分页） | `keywords`, `limit`, `offset`, `keyword`, `scene` |
-| `search_suggest_mobile` | 搜索联想（App 移动端版：直hit歌曲卡 + 联想词 + 热搜/原唱标签） | `keywords`, `keyword` |
-| `search_suggest_pc` | 搜索建议pc端 | `keyword` |
-| `song_cloud_download` | 从云盘获取歌曲下载链接 | `id` |
-| `song_copyright_rcmd` | 灰色歌曲的其他版本推荐 | `id`, `songid` |
-| `song_creators` | 歌曲创作者信息 | `id` |
-| `song_like` | 喜欢歌曲 | `like`, `id`, `uid` |
-| `song_simi_get` | 插播相似歌曲 | `id` |
-| `song_wiki_info` | 歌曲百科 | `id` |
-| `thinktank_audit_resource_detail` | 云小编获取任务 | `type` |
-| `thinktank_audit_resource_update` | 云小编提交任务 | `taskId`, `judgement`, `type` |
-| `user_event_all` | 获取当前登录用户可被上游枚举的全部动态 | — |
-| `vip_growthpoint_getall` | 一键领取所有会员成长值 | — |
-| `vip_sign_detail` | 黑胶乐签打卡详情 | `timestamp` |
-| `vip_sign_history` | 黑胶乐签打卡历史 / 状态查询 | `type` |
-| `vip_tasks_v1` | 会员任务 - 新版 | `id` |
-| `voicelist_my_created` | 我创建的播客声音 | `limit` |
-| `yunbei_task_finish_v1` | 云贝广告任务 - 完成任务领取云贝 | `yunbeiAmount` |
-| `yunbei_task_list_v1` | 云贝广告任务 - 查询今日任务状态 | — |
-| `yunbei_task_recommend_song` | 云贝广告任务 - 获取推荐歌曲 | `offset`, `limit` |
+### ad_get - 获取广告
+
+说明 : 获取广告位内容；原始回包被整理为 `ads`、`message` 与 `extra.reqId`。使用 xeapi。
+
+**可选参数 :** `type_ids` : 广告位 ID 的 JSON 字符串，默认 `["400002_0"]`
+
+**方法名 :** `ad_get`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("type_ids", r#"["400002_0"]"#);
+let result = client.ad_get(&query).await?;
+```
+
+**上游模块 :** [`module/ad_get.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/ad_get.js)
+
+---
+
+### ad_listening_rights - 获取免费听时长状态
+
+说明 : 查询免费听歌时长和权益状态。使用 xeapi。
+
+**参数 :** 无业务参数。
+
+**方法名 :** `ad_listening_rights`
+
+**调用例子 :**
+```rust
+let query = Query::new();
+let result = client.ad_listening_rights(&query).await?;
+```
+
+**上游模块 :** [`module/ad_listening_rights.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/ad_listening_rights.js)
+
+---
+
+### ad_listening_rights_gain - 领取广告权益
+
+说明 : 领取广告权益。传入实际广告返回的上下文和真实互动时间；客户端不会自动拉取广告或补造时间戳。使用 xeapi。
+
+**必选参数 :** `reqUid` : 实际广告上下文中的请求 ID（`req_id`）
+
+**可选参数 :** `exposureTime` : 真实曝光时间戳 ; `clickTime` : 真实点击时间戳 ; `appInfo` : 应用信息的 JSON 字符串 ; `uid` : 用户 ID ; `extraRightsType` : 额外权益类型 ; `source` : 来源标识 ; `extraRightsGainMethod` : 额外权益领取方式 ; `extraRightsGainDuration` : 额外权益时长 ; `nextRightsGainDuration` : 下一阶段权益时长 ; `rightsGainType` : 权益类型 ; `rightsGainDuration` : 权益时长 ; `gainMethodStep` : 领取步骤 ; `generalRightsInfo` : 广告下发的通用权益信息 ; `rightsExtJson` : 权益扩展信息 ; `contextInfo` : 广告上下文的 JSON 字符串 ; `installed` : 应用安装标记 ; `sniffTime` : 真实嗅探时间戳，仅领取方式 `3`/`6` 时提交 ; `creativeType` : 广告创意类型，默认 `36` ; `rightsGainMethod` : 权益领取方式，默认 `2` ; `playContinuously` : 是否连续播放；非空字符串会被视为真
+
+**方法名 :** `ad_listening_rights_gain`
+
+**调用例子 :**
+```rust
+let query = Query::new()
+    .param("reqUid", ad_request_id)
+    .param("contextInfo", ad_context_json)
+    .param("exposureTime", exposure_time)
+    .param("clickTime", click_time);
+let result = client.ad_listening_rights_gain(&query).await?;
+```
+
+**上游模块 :** [`module/ad_listening_rights_gain.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/ad_listening_rights_gain.js)
+
+---
+
+### artist_new_song_mv_list_v2 - 获取关注歌手的新歌曲和 MV
+
+说明 : 列出关注歌手的近期新作。起始时间优先用 `startTimestamp`，再用 `before`，否则使用当前时间。使用 eapi。
+
+**可选参数 :** `startTimestamp` : 起始毫秒时间戳 ; `before` : `startTimestamp` 的回退值 ; `sourceType` : 来源类型，默认 `1` ; `limit` : 返回条数，默认 `10` ; `firstRequest` : 首次请求标记，未提供时使用 `true`
+
+**方法名 :** `artist_new_song_mv_list_v2`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("limit", "10");
+let result = client.artist_new_song_mv_list_v2(&query).await?;
+```
+
+**上游模块 :** [`module/artist_new_song_mv_list_v2.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/artist_new_song_mv_list_v2.js)
+
+---
+
+### artist_new_song_playall - 获取所有关注歌手最近的 50 首新歌
+
+说明 : 获取所有关注歌手最近的 50 首新歌。使用 eapi。
+
+**参数 :** 无业务参数。
+
+**方法名 :** `artist_new_song_playall`
+
+**调用例子 :**
+```rust
+let query = Query::new();
+let result = client.artist_new_song_playall(&query).await?;
+```
+
+**上游模块 :** [`module/artist_new_song_playall.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/artist_new_song_playall.js)
+
+---
+
+### banner_v3 - 首页轮播（v3）
+
+说明 : 首页轮播（v3）。使用 weapi。
+
+**可选参数 :** `clientType` : 客户端类型，默认 `android`
+
+**方法名 :** `banner_v3`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("clientType", "android");
+let result = client.banner_v3(&query).await?;
+```
+
+**上游模块 :** [`module/banner_v3.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/banner_v3.js)
+
+---
+
+### captcha_safe_sent - 发送安全验证码
+
+说明 : 向已登录账号绑定的手机号发送安全验证码。使用 eapi。
+
+**可选参数 :** `ctcode` : 国家或地区码，默认 `86`
+
+**方法名 :** `captcha_safe_sent`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("ctcode", "86");
+let result = client.captcha_safe_sent(&query).await?;
+```
+
+**上游模块 :** [`module/captcha_safe_sent.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/captcha_safe_sent.js)
+
+---
+
+### captcha_sent_v1 - 发送验证码
+
+说明 : 向指定手机号发送 PC 登录验证码。使用 eapi。
+
+**必选参数 :** `phone` : 接收验证码的手机号
+
+**可选参数 :** `ctcode` : 国家或地区码，默认 `86`
+
+**方法名 :** `captcha_sent_v1`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("phone", phone_number);
+let result = client.captcha_sent_v1(&query).await?;
+```
+
+**上游模块 :** [`module/captcha_sent_v1.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/captcha_sent_v1.js)
+
+---
+
+### chart_detail - 获取指定维度音乐排行榜详情
+
+说明 : 按榜单编码、目标 ID 和目标类型获取榜单详情。使用 eapi。
+
+**必选参数 :** `chartCode` : 榜单编码 ; `targetId` : 目标 ID ; `targetType` : 目标类型
+
+**方法名 :** `chart_detail`
+
+**调用例子 :**
+```rust
+let query = Query::new()
+    .param("chartCode", chart_code)
+    .param("targetId", target_id)
+    .param("targetType", target_type);
+let result = client.chart_detail(&query).await?;
+```
+
+**上游模块 :** [`module/chart_detail.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/chart_detail.js)
+
+---
+
+### chart_song_detail - 获取指定维度音乐排行榜列表
+
+说明 : 按榜单编码、目标 ID 和目标类型获取榜单歌曲列表。使用 eapi。
+
+**必选参数 :** `chartCode` : 榜单编码 ; `targetId` : 目标 ID ; `targetType` : 目标类型
+
+**方法名 :** `chart_song_detail`
+
+**调用例子 :**
+```rust
+let query = Query::new()
+    .param("chartCode", chart_code)
+    .param("targetId", target_id)
+    .param("targetType", target_type);
+let result = client.chart_song_detail(&query).await?;
+```
+
+**上游模块 :** [`module/chart_song_detail.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/chart_song_detail.js)
+
+---
+
+### comment_add - 发送评论
+
+说明 : 发送评论。使用 xeapi。
+
+**必选参数 :** `type` : 资源类型，例如 `0` 表示歌曲 ; `id` : 资源 ID ; `content` : 评论内容
+
+**方法名 :** `comment_add`
+
+**调用例子 :**
+```rust
+let query = Query::new()
+    .param("type", "0")
+    .param("id", "186016")
+    .param("content", "谢谢分享");
+let result = client.comment_add(&query).await?;
+```
+
+**上游模块 :** [`module/comment_add.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/comment_add.js)
+
+---
+
+### comment_default_text - 评论默认文案
+
+说明 : 查询指定评论线程的默认文案。使用 weapi。
+
+**必选参数 :** `threadId` : 评论线程 ID
+
+**方法名 :** `comment_default_text`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("threadId", "R_SO_4_186016");
+let result = client.comment_default_text(&query).await?;
+```
+
+**上游模块 :** [`module/comment_default_text.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/comment_default_text.js)
+
+---
+
+### comment_delete - 删除评论
+
+说明 : 删除评论。使用 xeapi。
+
+**必选参数 :** `type` : 资源类型，例如 `0` 表示歌曲 ; `id` : 资源 ID ; `cid` : 评论 ID
+
+**方法名 :** `comment_delete`
+
+**调用例子 :**
+```rust
+let query = Query::new()
+    .param("type", "0")
+    .param("id", "186016")
+    .param("cid", comment_id);
+let result = client.comment_delete(&query).await?;
+```
+
+**上游模块 :** [`module/comment_delete.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/comment_delete.js)
+
+---
+
+### comment_hotwall_square_info - 热评墙广场信息
+
+说明 : 热评墙广场信息。使用 weapi。
+
+**参数 :** 无业务参数。
+
+**方法名 :** `comment_hotwall_square_info`
+
+**调用例子 :**
+```rust
+let query = Query::new();
+let result = client.comment_hotwall_square_info(&query).await?;
+```
+
+**上游模块 :** [`module/comment_hotwall_square_info.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/comment_hotwall_square_info.js)
+
+---
+
+### comment_reply - 回复评论
+
+说明 : 回复指定评论，而非发布顶层评论。使用 xeapi。
+
+**必选参数 :** `type` : 资源类型，例如 `0` 表示歌曲 ; `id` : 资源 ID ; `cid` : 评论 ID ; `content` : 评论内容
+
+**方法名 :** `comment_reply`
+
+**调用例子 :**
+```rust
+let query = Query::new()
+    .param("type", "0")
+    .param("id", "186016")
+    .param("cid", comment_id)
+    .param("content", "谢谢分享");
+let result = client.comment_reply(&query).await?;
+```
+
+**上游模块 :** [`module/comment_reply.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/comment_reply.js)
+
+---
+
+### comment_report - 举报评论
+
+说明 : 举报指定歌曲下的评论。使用 eapi。
+
+**必选参数 :** `id` : 资源 ID ; `cid` : 评论 ID ; `reason` : 举报理由 ID 或文本
+
+**方法名 :** `comment_report`
+
+**调用例子 :**
+```rust
+let query = Query::new()
+    .param("id", "186016")
+    .param("cid", comment_id)
+    .param("reason", report_reason);
+let result = client.comment_report(&query).await?;
+```
+
+**上游模块 :** [`module/comment_report.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/comment_report.js)
+
+---
+
+### device_kickoff - 强制下线设备
+
+说明 : 使用登录设备列表返回的设备 key 下线指定设备。使用 eapi。
+
+**必选参数 :** `deviceKey` : 目标设备 key
+
+**可选参数 :** `captcha` : 短信验证码，默认空串
+
+**方法名 :** `device_kickoff`
+
+**调用例子 :**
+```rust
+let query = Query::new()
+    .param("deviceKey", device_key)
+    .param("captcha", captcha);
+let result = client.device_kickoff(&query).await?;
+```
+
+**上游模块 :** [`module/device_kickoff.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/device_kickoff.js)
+
+---
+
+### device_list - 登录设备列表
+
+说明 : 查询当前账号的登录设备列表。使用 eapi。
+
+**参数 :** 无业务参数。
+
+**方法名 :** `device_list`
+
+**调用例子 :**
+```rust
+let query = Query::new();
+let result = client.device_list(&query).await?;
+```
+
+**上游模块 :** [`module/device_list.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/device_list.js)
+
+---
+
+### deviceinfo_center_upload - 上报设备中心设备名称
+
+说明 : 设置当前登录设备在设备管理中的名称；名称去除首尾空白后不能为空。使用 eapi。
+
+**必选参数 :** `deviceName` : 设备名称 或 `name` : `deviceName` 未传或为空串时使用的设备名称
+
+**方法名 :** `deviceinfo_center_upload`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("deviceName", "书房电脑");
+let result = client.deviceinfo_center_upload(&query).await?;
+```
+
+**上游模块 :** [`module/deviceinfo_center_upload.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/deviceinfo_center_upload.js)
+
+---
+
+### dislike_list - 获取「不感兴趣」歌曲列表
+
+说明 : 获取「不感兴趣」歌曲列表。使用 xeapi。
+
+**参数 :** 无业务参数。
+
+**方法名 :** `dislike_list`
+
+**调用例子 :**
+```rust
+let query = Query::new();
+let result = client.dislike_list(&query).await?;
+```
+
+**上游模块 :** [`module/dislike_list.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/dislike_list.js)
+
+---
+
+### dj_category_list - 播客分类列表（新版）
+
+说明 : 获取新版播客分类列表，包含一级分类及其下的子分类。使用 xeapi。
+
+**参数 :** 无业务参数。
+
+**方法名 :** `dj_category_list`
+
+**调用例子 :**
+```rust
+let query = Query::new();
+let result = client.dj_category_list(&query).await?;
+```
+
+**上游模块 :** [`module/dj_category_list.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/dj_category_list.js)
+
+---
+
+### dj_difm_all_style_channel - DIFM 电台 - 分类
+
+说明 : 按来源获取 DIFM 电台频道分类。使用 eapi。
+
+**可选参数 :** `sources` : 来源列表的 JSON 字符串，默认 `[0]`
+
+**方法名 :** `dj_difm_all_style_channel`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("sources", "[0]");
+let result = client.dj_difm_all_style_channel(&query).await?;
+```
+
+**上游模块 :** [`module/dj_difm_all_style_channel.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/dj_difm_all_style_channel.js)
+
+---
+
+### dj_difm_channel_subscribe - DIFM 电台 - 收藏频道
+
+说明 : DIFM 电台：收藏频道。使用 eapi。
+
+**必选参数 :** `id` : 资源 ID
+
+**方法名 :** `dj_difm_channel_subscribe`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("id", channel_id);
+let result = client.dj_difm_channel_subscribe(&query).await?;
+```
+
+**上游模块 :** [`module/dj_difm_channel_subscribe.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/dj_difm_channel_subscribe.js)
+
+---
+
+### dj_difm_channel_unsubscribe - DIFM 电台 - 取消收藏频道
+
+说明 : DIFM 电台：取消收藏频道。使用 eapi。
+
+**必选参数 :** `id` : 资源 ID
+
+**方法名 :** `dj_difm_channel_unsubscribe`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("id", channel_id);
+let result = client.dj_difm_channel_unsubscribe(&query).await?;
+```
+
+**上游模块 :** [`module/dj_difm_channel_unsubscribe.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/dj_difm_channel_unsubscribe.js)
+
+---
+
+### dj_difm_playing_tracks_list - DIFM 电台 - 播放列表
+
+说明 : 获取指定 DIFM 频道的推荐播放列表。使用 eapi。
+
+**必选参数 :** `channelId` : 频道 ID
+
+**可选参数 :** `limit` : 返回条数，默认 `5` ; `source` : 来源标识，默认 `0`
+
+**方法名 :** `dj_difm_playing_tracks_list`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("channelId", channel_id);
+let result = client.dj_difm_playing_tracks_list(&query).await?;
+```
+
+**上游模块 :** [`module/dj_difm_playing_tracks_list.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/dj_difm_playing_tracks_list.js)
+
+---
+
+### dj_difm_subscribe_channels_get - DIFM 电台 - 收藏列表
+
+说明 : 按来源列出已收藏的 DIFM 频道。使用 eapi。
+
+**可选参数 :** `sources` : 来源列表的 JSON 字符串，默认 `[0]`
+
+**方法名 :** `dj_difm_subscribe_channels_get`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("sources", "[0]");
+let result = client.dj_difm_subscribe_channels_get(&query).await?;
+```
+
+**上游模块 :** [`module/dj_difm_subscribe_channels_get.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/dj_difm_subscribe_channels_get.js)
+
+---
+
+### event_privacy - 修改本人动态的可见权限
+
+说明 : 修改本人动态的可见权限，仅接受 `0`、`1`、`2`、`6`。使用 eapi。
+
+**必选参数 :** `evId` : 动态 ID ; `privacy` : 可见权限
+
+**方法名 :** `event_privacy`
+
+**调用例子 :**
+```rust
+let query = Query::new()
+    .param("evId", event_id)
+    .param("privacy", "2");
+let result = client.event_privacy(&query).await?;
+```
+
+**上游模块 :** [`module/event_privacy.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/event_privacy.js)
+
+---
+
+### event_search - 动态搜索
+
+说明 : 动态搜索。使用 weapi。
+
+**必选参数 :** `keyword` : 搜索关键词 或 `keywords` : `keyword` 未提供时的回退关键词
+
+**可选参数 :** `limit` : 返回条数，默认 `30` ; `offset` : 分页偏移量，默认 `0`
+
+**方法名 :** `event_search`
+
+**调用例子 :**
+```rust
+let query = Query::new()
+    .param("keyword", "海阔天空")
+    .param("limit", "10");
+let result = client.event_search(&query).await?;
+```
+
+**上游模块 :** [`module/event_search.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/event_search.js)
+
+---
+
+### fans_group_detail - 乐迷团详情
+
+说明 : 乐迷团详情。使用 eapi。
+
+**必选参数 :** `groupId` : 乐迷团 ID 或 `id` : 资源 ID
+
+**可选参数 :** `scene` : 使用场景
+
+**方法名 :** `fans_group_detail`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("groupId", group_id);
+let result = client.fans_group_detail(&query).await?;
+```
+
+**上游模块 :** [`module/fans_group_detail.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/fans_group_detail.js)
+
+---
+
+### fans_group_feed_recommend - 乐迷团推荐笔记
+
+说明 : 按游标分页获取乐迷团推荐笔记。使用 eapi。
+
+**必选参数 :** `fansGroupId` : 乐迷团 ID，未提供时使用 `groupId` 或 `groupId` : 乐迷团 ID
+
+**可选参数 :** `cursor` : 分页游标，默认 `0` ; `size` : 每页条数，默认 `10` ; `artistSelf` : 歌手本人标记，默认 `0`
+
+**方法名 :** `fans_group_feed_recommend`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("fansGroupId", group_id);
+let result = client.fans_group_feed_recommend(&query).await?;
+```
+
+**上游模块 :** [`module/fans_group_feed_recommend.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/fans_group_feed_recommend.js)
+
+---
+
+### fans_group_user_group_detail - 用户所处乐迷团详情
+
+说明 : 用户所处乐迷团详情。使用 eapi。
+
+**必选参数 :** `groupId` : 乐迷团 ID 或 `id` : 资源 ID
+
+**方法名 :** `fans_group_user_group_detail`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("groupId", group_id);
+let result = client.fans_group_user_group_detail(&query).await?;
+```
+
+**上游模块 :** [`module/fans_group_user_group_detail.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/fans_group_user_group_detail.js)
+
+---
+
+### fans_group_user_groups - 获取当前登录用户加入的全部歌手乐迷团列表
+
+说明 : 获取当前登录用户加入的全部歌手乐迷团列表。使用 eapi。
+
+**参数 :** 无业务参数。
+
+**方法名 :** `fans_group_user_groups`
+
+**调用例子 :**
+```rust
+let query = Query::new();
+let result = client.fans_group_user_groups(&query).await?;
+```
+
+**上游模块 :** [`module/fans_group_user_groups.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/fans_group_user_groups.js)
+
+---
+
+### lbs_city_code - 多级行政区划数据获取接口
+
+说明 : 多级行政区划数据获取接口。使用 eapi。
+
+**可选参数 :** `bizCode` : 业务编码，默认空串
+
+**方法名 :** `lbs_city_code`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("bizCode", biz_code);
+let result = client.lbs_city_code(&query).await?;
+```
+
+**上游模块 :** [`module/lbs_city_code.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/lbs_city_code.js)
+
+---
+
+### like_v1 - 红心与取消红心歌曲- v1
+
+说明 : 使用新版接口红心或取消红心歌曲。只有传入字符串 `false` 才取消红心。使用 xeapi。
+
+**必选参数 :** `id` : 资源 ID
+
+**可选参数 :** `like` : 喜欢标记，默认喜欢
+
+**方法名 :** `like_v1`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("id", "186016");
+let result = client.like_v1(&query).await?;
+```
+
+**上游模块 :** [`module/like_v1.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/like_v1.js)
+
+---
+
+### listen_data_song_play_rank - 听歌足迹 - 歌曲播放排行 (Top20)
+
+说明 : 查询听歌足迹中的歌曲播放排行（Top 20）。使用 eapi。
+
+**可选参数 :** `type` : 统计周期，默认 `month` ; `endTime` : 统计结束时间
+
+**方法名 :** `listen_data_song_play_rank`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("type", "month");
+let result = client.listen_data_song_play_rank(&query).await?;
+```
+
+**上游模块 :** [`module/listen_data_song_play_rank.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/listen_data_song_play_rank.js)
+
+---
+
+### middle_play_do_lottery - 云小编每日抽奖
+
+说明 : 云小编每日抽奖。使用 eapi。
+
+**可选参数 :** `activityId` : 活动 ID，默认 `6501202` ; `drawCount` : 抽奖次数，默认 `1`
+
+**方法名 :** `middle_play_do_lottery`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("activityId", activity_id);
+let result = client.middle_play_do_lottery(&query).await?;
+```
+
+**上游模块 :** [`module/middle_play_do_lottery.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/middle_play_do_lottery.js)
+
+---
+
+### middle_play_lottery_remain_chance - 云小编抽奖剩余次数查询
+
+说明 : 云小编抽奖剩余次数查询。使用 eapi。
+
+**可选参数 :** `activityId` : 活动 ID，默认 `6501202`
+
+**方法名 :** `middle_play_lottery_remain_chance`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("activityId", activity_id);
+let result = client.middle_play_lottery_remain_chance(&query).await?;
+```
+
+**上游模块 :** [`module/middle_play_lottery_remain_chance.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/middle_play_lottery_remain_chance.js)
+
+---
+
+### mlog_mycollect - 我收藏的播客（Mlog）——按时间倒序分页
+
+说明 : 按时间倒序分页获取收藏的 Mlog。使用 xeapi。
+
+**可选参数 :** `time` : 时间游标，默认 `-1` ; `limit` : 返回条数，默认 `30` ; `type` : Mlog 类型，默认 `3`
+
+**方法名 :** `mlog_mycollect`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("limit", "10");
+let result = client.mlog_mycollect(&query).await?;
+```
+
+**上游模块 :** [`module/mlog_mycollect.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/mlog_mycollect.js)
+
+---
+
+### radio_sport_get - 跑步漫游
+
+说明 : 跑步漫游。使用 eapi。
+
+**可选参数 :** `bpm` : 每分钟节拍数，默认 `50`
+
+**方法名 :** `radio_sport_get`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("bpm", "90");
+let result = client.radio_sport_get(&query).await?;
+```
+
+**上游模块 :** [`module/radio_sport_get.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/radio_sport_get.js)
+
+---
+
+### recommend_category_configs - 每日风格推荐场景配置列表获取
+
+说明 : 每日风格推荐场景配置列表获取。使用 xeapi。
+
+**参数 :** 无业务参数。
+
+**方法名 :** `recommend_category_configs`
+
+**调用例子 :**
+```rust
+let query = Query::new();
+let result = client.recommend_category_configs(&query).await?;
+```
+
+**上游模块 :** [`module/recommend_category_configs.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/recommend_category_configs.js)
+
+---
+
+### recommend_category_set - 每日风格推荐场景配置设置
+
+说明 : 保存每日风格推荐偏好；将逗号分隔的标签 ID 和分类 ID 转为数字。使用 xeapi。
+
+**必选参数 :** `tags` : 逗号分隔的标签 ID ; `category` : 推荐分类 ID
+
+**方法名 :** `recommend_category_set`
+
+**调用例子 :**
+```rust
+let query = Query::new()
+    .param("tags", tag_ids)
+    .param("category", category_id);
+let result = client.recommend_category_set(&query).await?;
+```
+
+**上游模块 :** [`module/recommend_category_set.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/recommend_category_set.js)
+
+---
+
+### recommend_category_songs - 每日推荐风格歌曲
+
+说明 : 每日推荐风格歌曲。使用 xeapi。
+
+**参数 :** 无业务参数。
+
+**方法名 :** `recommend_category_songs`
+
+**调用例子 :**
+```rust
+let query = Query::new();
+let result = client.recommend_category_songs(&query).await?;
+```
+
+**上游模块 :** [`module/recommend_category_songs.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/recommend_category_songs.js)
+
+---
+
+### recommend_songs_v1 - 每日推荐歌曲 - v1
+
+说明 : 查询已登录用户的每日推荐歌曲。使用 xeapi。
+
+**可选参数 :** `ispush` : 推送标记，默认 `false`
+
+**方法名 :** `recommend_songs_v1`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("ispush", "true");
+let result = client.recommend_songs_v1(&query).await?;
+```
+
+**上游模块 :** [`module/recommend_songs_v1.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/recommend_songs_v1.js)
+
+---
+
+### relay_play_state_submit - 提交歌曲播放状态
+
+说明 : 提交歌曲播放状态。使用 weapi。
+
+**必选参数 :** `id` : 资源 ID
+
+**可选参数 :** `sessionId` : 播放会话 ID；未传或为空串时生成随机 ID ; `progress` : 播放进度，默认 `0` ; `playMode` : 播放模式，默认 `list_loop` ; `type` : 资源类型，默认 `song`
+
+**方法名 :** `relay_play_state_submit`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("id", "186016");
+let result = client.relay_play_state_submit(&query).await?;
+```
+
+**上游模块 :** [`module/relay_play_state_submit.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/relay_play_state_submit.js)
+
+---
+
+### rep_ugc_activity_collect - 云小编领取任务积分
+
+说明 : 领取指定活动的任务积分；活动 ID 可从 `rep_ugc_activity_get` 获取。使用 eapi。
+
+**可选参数 :** `activityId` : 活动 ID，默认 `5001`
+
+**方法名 :** `rep_ugc_activity_collect`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("activityId", activity_id);
+let result = client.rep_ugc_activity_collect(&query).await?;
+```
+
+**上游模块 :** [`module/rep_ugc_activity_collect.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/rep_ugc_activity_collect.js)
+
+---
+
+### rep_ugc_activity_get - 云小编活动信息
+
+说明 : 云小编活动信息。使用 eapi。
+
+**参数 :** 无业务参数。
+
+**方法名 :** `rep_ugc_activity_get`
+
+**调用例子 :**
+```rust
+let query = Query::new();
+let result = client.rep_ugc_activity_get(&query).await?;
+```
+
+**上游模块 :** [`module/rep_ugc_activity_get.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/rep_ugc_activity_get.js)
+
+---
+
+### rep_ugc_exam_info_get - 云小编考试状态
+
+说明 : 云小编考试状态。使用 eapi。
+
+**必选参数 :** `examType` : 考试类型
+
+**方法名 :** `rep_ugc_exam_info_get`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("examType", "musicalStyleEnter");
+let result = client.rep_ugc_exam_info_get(&query).await?;
+```
+
+**上游模块 :** [`module/rep_ugc_exam_info_get.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/rep_ugc_exam_info_get.js)
+
+---
+
+### rep_ugc_exam_question_single_get - 云小编考试取题
+
+说明 : 使用考试任务 ID 获取当前试题；任务 ID 可从 `rep_ugc_exam_start` 获取。使用 eapi。
+
+**必选参数 :** `examType` : 考试类型 ; `taskId` : 任务 ID
+
+**方法名 :** `rep_ugc_exam_question_single_get`
+
+**调用例子 :**
+```rust
+let query = Query::new()
+    .param("examType", "musicalStyleEnter")
+    .param("taskId", task_id);
+let result = client.rep_ugc_exam_question_single_get(&query).await?;
+```
+
+**上游模块 :** [`module/rep_ugc_exam_question_single_get.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/rep_ugc_exam_question_single_get.js)
+
+---
+
+### rep_ugc_exam_result_get - 云小编考试结果
+
+说明 : 云小编考试结果。使用 eapi。
+
+**必选参数 :** `examType` : 考试类型 ; `taskId` : 任务 ID
+
+**方法名 :** `rep_ugc_exam_result_get`
+
+**调用例子 :**
+```rust
+let query = Query::new()
+    .param("examType", "musicalStyleEnter")
+    .param("taskId", task_id);
+let result = client.rep_ugc_exam_result_get(&query).await?;
+```
+
+**上游模块 :** [`module/rep_ugc_exam_result_get.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/rep_ugc_exam_result_get.js)
+
+---
+
+### rep_ugc_exam_start - 云小编考试开始
+
+说明 : 云小编考试开始。使用 eapi。
+
+**必选参数 :** `examType` : 考试类型
+
+**方法名 :** `rep_ugc_exam_start`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("examType", "musicalStyleEnter");
+let result = client.rep_ugc_exam_start(&query).await?;
+```
+
+**上游模块 :** [`module/rep_ugc_exam_start.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/rep_ugc_exam_start.js)
+
+---
+
+### rep_ugc_exam_submit - 云小编考试提交
+
+说明 : 向指定考试任务提交一道试题的答案；题目 ID 可从 `rep_ugc_exam_question_single_get` 获取。使用 eapi。
+
+**必选参数 :** `examType` : 考试类型 ; `taskId` : 任务 ID ; `questionId` : 试题 ID ; `answer` : 答案，`A`（对）或 `B`（错）
+
+**方法名 :** `rep_ugc_exam_submit`
+
+**调用例子 :**
+```rust
+let query = Query::new()
+    .param("examType", "musicalStyleEnter")
+    .param("taskId", task_id)
+    .param("questionId", question_id)
+    .param("answer", "A");
+let result = client.rep_ugc_exam_submit(&query).await?;
+```
+
+**上游模块 :** [`module/rep_ugc_exam_submit.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/rep_ugc_exam_submit.js)
+
+---
+
+### rep_ugc_user_collect_vip - 云小编领取一日会员
+
+说明 : 领取云小编的一日会员奖励；是否可领取见 `rep_ugc_user_vip`。使用 eapi。
+
+**可选参数 :** `activityId` : 活动 ID，默认 `5001`
+
+**方法名 :** `rep_ugc_user_collect_vip`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("activityId", activity_id);
+let result = client.rep_ugc_user_collect_vip(&query).await?;
+```
+
+**上游模块 :** [`module/rep_ugc_user_collect_vip.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/rep_ugc_user_collect_vip.js)
+
+---
+
+### rep_ugc_user_get - 云小编获取用户详情
+
+说明 : 云小编获取用户详情。使用 eapi。
+
+**参数 :** 无业务参数。
+
+**方法名 :** `rep_ugc_user_get`
+
+**调用例子 :**
+```rust
+let query = Query::new();
+let result = client.rep_ugc_user_get(&query).await?;
+```
+
+**上游模块 :** [`module/rep_ugc_user_get.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/rep_ugc_user_get.js)
+
+---
+
+### rep_ugc_user_sign - 云小编每日签到
+
+说明 : 云小编每日签到。使用 eapi。
+
+**参数 :** 无业务参数。
+
+**方法名 :** `rep_ugc_user_sign`
+
+**调用例子 :**
+```rust
+let query = Query::new();
+let result = client.rep_ugc_user_sign(&query).await?;
+```
+
+**上游模块 :** [`module/rep_ugc_user_sign.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/rep_ugc_user_sign.js)
+
+---
+
+### rep_ugc_user_vip - 云小编查询会员任务状态
+
+说明 : 云小编查询会员任务状态。使用 eapi。
+
+**参数 :** 无业务参数。
+
+**方法名 :** `rep_ugc_user_vip`
+
+**调用例子 :**
+```rust
+let query = Query::new();
+let result = client.rep_ugc_user_vip(&query).await?;
+```
+
+**上游模块 :** [`module/rep_ugc_user_vip.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/rep_ugc_user_vip.js)
+
+---
+
+### sati_resource_list - 助眠解压 - 获取标签下资源列表
+
+说明 : 助眠解压：获取标签下资源列表。使用 eapi。
+
+**必选参数 :** `tag` : 标签
+
+**方法名 :** `sati_resource_list`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("tag", tag_id);
+let result = client.sati_resource_list(&query).await?;
+```
+
+**上游模块 :** [`module/sati_resource_list.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/sati_resource_list.js)
+
+---
+
+### sati_resource_list_more - 助眠解压 - 查看同类推荐
+
+说明 : 助眠解压：查看同类推荐。使用 eapi。
+
+**必选参数 :** `id` : 资源 ID
+
+**方法名 :** `sati_resource_list_more`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("id", resource_id);
+let result = client.sati_resource_list_more(&query).await?;
+```
+
+**上游模块 :** [`module/sati_resource_list_more.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/sati_resource_list_more.js)
+
+---
+
+### sati_resource_sub - 助眠解压 - 收藏
+
+说明 : 收藏助眠解压资源，也可用 `cancel` 取消收藏。使用 eapi。
+
+**必选参数 :** `id` : 资源 ID
+
+**可选参数 :** `cancel` : 取消收藏标记，默认 `false`
+
+**方法名 :** `sati_resource_sub`
+
+**调用例子 :**
+```rust
+let query = Query::new()
+    .param("id", resource_id)
+    .param("cancel", "false");
+let result = client.sati_resource_sub(&query).await?;
+```
+
+**上游模块 :** [`module/sati_resource_sub.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/sati_resource_sub.js)
+
+---
+
+### sati_resource_sub_list - 助眠解压 - 收藏列表
+
+说明 : 助眠解压：收藏列表。使用 eapi。
+
+**参数 :** 无业务参数。
+
+**方法名 :** `sati_resource_sub_list`
+
+**调用例子 :**
+```rust
+let query = Query::new();
+let result = client.sati_resource_sub_list(&query).await?;
+```
+
+**上游模块 :** [`module/sati_resource_sub_list.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/sati_resource_sub_list.js)
+
+---
+
+### sati_tag_list - 助眠解压 - 标签列表
+
+说明 : 助眠解压：标签列表。使用 eapi。
+
+**参数 :** 无业务参数。
+
+**方法名 :** `sati_tag_list`
+
+**调用例子 :**
+```rust
+let query = Query::new();
+let result = client.sati_tag_list(&query).await?;
+```
+
+**上游模块 :** [`module/sati_tag_list.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/sati_tag_list.js)
+
+---
+
+### sati_timescene_resources_get - 助眠解压 - 特定时间场景下的推荐资源
+
+说明 : 助眠解压：特定时间场景下的推荐资源。使用 eapi。
+
+**参数 :** 无业务参数。
+
+**方法名 :** `sati_timescene_resources_get`
+
+**调用例子 :**
+```rust
+let query = Query::new();
+let result = client.sati_timescene_resources_get(&query).await?;
+```
+
+**上游模块 :** [`module/sati_timescene_resources_get.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/sati_timescene_resources_get.js)
+
+---
+
+### search_lyric - 按歌词搜索
+
+说明 : 按歌词片段搜索歌曲；优先使用 `keyword`，未提供时回退到 `keywords`。使用 weapi。
+
+**必选参数 :** `keyword` : 搜索关键词 或 `keywords` : `keyword` 未提供时的回退关键词
+
+**可选参数 :** `limit` : 返回条数，默认 `30` ; `offset` : 分页偏移量，默认 `0`
+
+**方法名 :** `search_lyric`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("keyword", "海阔天空");
+let result = client.search_lyric(&query).await?;
+```
+
+**上游模块 :** [`module/search_lyric.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/search_lyric.js)
+
+---
+
+### search_song_list_page - 新版单曲搜索（分页）
+
+说明 : 分页搜索单曲；优先使用 `keyword`，未提供时回退到 `keywords`。使用 weapi。
+
+**必选参数 :** `keyword` : 搜索关键词 或 `keywords` : `keyword` 未提供时的回退关键词
+
+**可选参数 :** `limit` : 返回条数，默认 `30` ; `offset` : 分页偏移量，默认 `0` ; `scene` : 搜索场景，默认 `normal`
+
+**方法名 :** `search_song_list_page`
+
+**调用例子 :**
+```rust
+let query = Query::new()
+    .param("keyword", "海阔天空")
+    .param("limit", "10");
+let result = client.search_song_list_page(&query).await?;
+```
+
+**上游模块 :** [`module/search_song_list_page.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/search_song_list_page.js)
+
+---
+
+### search_suggest_mobile - 搜索联想（App 移动端版：直hit歌曲卡 + 联想词 + 热搜/原唱标签）
+
+说明 : 获取移动端搜索联想，包括直出歌曲卡、联想词和热搜或原唱标签。使用 weapi。
+
+**必选参数 :** `keyword` : 搜索关键词 或 `keywords` : `keyword` 未提供时的回退关键词
+
+**方法名 :** `search_suggest_mobile`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("keyword", "海阔天空");
+let result = client.search_suggest_mobile(&query).await?;
+```
+
+**上游模块 :** [`module/search_suggest_mobile.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/search_suggest_mobile.js)
+
+---
+
+### search_suggest_pc - 搜索建议（PC 端）
+
+说明 : 获取 PC 端搜索建议。使用 eapi。
+
+**必选参数 :** `keyword` : 搜索关键词
+
+**方法名 :** `search_suggest_pc`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("keyword", "海阔天空");
+let result = client.search_suggest_pc(&query).await?;
+```
+
+**上游模块 :** [`module/search_suggest_pc.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/search_suggest_pc.js)
+
+---
+
+### song_cloud_download - 从云盘获取歌曲下载链接
+
+说明 : 查询当前用户云盘中指定歌曲的下载链接。使用 eapi。
+
+**必选参数 :** `id` : 资源 ID
+
+**方法名 :** `song_cloud_download`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("id", cloud_song_id);
+let result = client.song_cloud_download(&query).await?;
+```
+
+**上游模块 :** [`module/song_cloud_download.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/song_cloud_download.js)
+
+---
+
+### song_copyright_rcmd - 灰色歌曲的其他版本推荐
+
+说明 : 查询当前歌曲的其他版本；优先从 `songid` 读取歌曲 ID，未提供时使用 `id`。使用 eapi。
+
+**必选参数 :** `songid` : 优先使用的歌曲 ID 或 `id` : 资源 ID
+
+**方法名 :** `song_copyright_rcmd`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("songid", "186016");
+let result = client.song_copyright_rcmd(&query).await?;
+```
+
+**上游模块 :** [`module/song_copyright_rcmd.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/song_copyright_rcmd.js)
+
+---
+
+### song_creators - 歌曲创作者信息
+
+说明 : 歌曲创作者信息。使用 eapi。
+
+**必选参数 :** `id` : 资源 ID
+
+**方法名 :** `song_creators`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("id", "186016");
+let result = client.song_creators(&query).await?;
+```
+
+**上游模块 :** [`module/song_creators.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/song_creators.js)
+
+---
+
+### song_like - 喜欢歌曲
+
+说明 : 喜欢或取消喜欢歌曲。只有传入字符串 `false` 才取消喜欢。使用 eapi。
+
+**必选参数 :** `id` : 资源 ID
+
+**可选参数 :** `like` : 喜欢标记，默认喜欢 ; `uid` : 用户 ID
+
+**方法名 :** `song_like`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("id", "186016");
+let result = client.song_like(&query).await?;
+```
+
+**上游模块 :** [`module/song_like.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/song_like.js)
+
+---
+
+### song_simi_get - 插播相似歌曲
+
+说明 : 插播相似歌曲。使用 eapi。
+
+**必选参数 :** `id` : 资源 ID
+
+**方法名 :** `song_simi_get`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("id", "186016");
+let result = client.song_simi_get(&query).await?;
+```
+
+**上游模块 :** [`module/song_simi_get.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/song_simi_get.js)
+
+---
+
+### song_wiki_info - 歌曲百科
+
+说明 : 歌曲百科。使用 eapi。
+
+**必选参数 :** `id` : 资源 ID
+
+**方法名 :** `song_wiki_info`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("id", "186016");
+let result = client.song_wiki_info(&query).await?;
+```
+
+**上游模块 :** [`module/song_wiki_info.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/song_wiki_info.js)
+
+---
+
+### thinktank_audit_resource_detail - 云小编获取任务
+
+说明 : 按审核类型领取云小编任务。使用 eapi。
+
+**可选参数 :** `type` : 审核类型，默认 `4`
+
+**方法名 :** `thinktank_audit_resource_detail`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("type", "0");
+let result = client.thinktank_audit_resource_detail(&query).await?;
+```
+
+**上游模块 :** [`module/thinktank_audit_resource_detail.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/thinktank_audit_resource_detail.js)
+
+---
+
+### thinktank_audit_resource_update - 云小编提交任务
+
+说明 : 提交任务的审核结果；任务 ID 可从 `thinktank_audit_resource_detail` 获取。使用 eapi。
+
+**必选参数 :** `taskId` : 任务 ID ; `judgement` : 审核结果
+
+**可选参数 :** `type` : 审核类型，默认 `4`
+
+**方法名 :** `thinktank_audit_resource_update`
+
+**调用例子 :**
+```rust
+let query = Query::new()
+    .param("taskId", task_id)
+    .param("judgement", judgement);
+let result = client.thinktank_audit_resource_update(&query).await?;
+```
+
+**上游模块 :** [`module/thinktank_audit_resource_update.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/thinktank_audit_resource_update.js)
+
+---
+
+### user_event_all - 获取当前登录用户可被上游枚举的全部动态
+
+说明 : 使用当前登录会话枚举动态，每页 100 条、最多 1000 页，按动态 ID 去重。某页失败时立即停止，返回错误状态、原始业务回包与累计 cookie，不返回不完整的成功列表。
+
+**参数 :** 无业务参数。
+
+**方法名 :** `user_event_all`
+
+**调用例子 :**
+```rust
+let query = Query::new();
+let result = client.user_event_all(&query).await?;
+```
+
+**上游模块 :** [`module/user_event_all.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/user_event_all.js)
+
+---
+
+### vip_growthpoint_getall - 一键领取所有会员成长值
+
+说明 : 领取所有已完成的会员任务成长值奖励。使用 xeapi。
+
+**参数 :** 无业务参数。
+
+**方法名 :** `vip_growthpoint_getall`
+
+**调用例子 :**
+```rust
+let query = Query::new();
+let result = client.vip_growthpoint_getall(&query).await?;
+```
+
+**上游模块 :** [`module/vip_growthpoint_getall.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/vip_growthpoint_getall.js)
+
+---
+
+### vip_sign_detail - 黑胶乐签打卡详情
+
+说明 : 获取指定时间对应的黑胶乐签；不传时间时由服务端随机返回一条。使用 eapi。
+
+**可选参数 :** `timestamp` : 毫秒时间戳
+
+**方法名 :** `vip_sign_detail`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("timestamp", timestamp_ms);
+let result = client.vip_sign_detail(&query).await?;
+```
+
+**上游模块 :** [`module/vip_sign_detail.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/vip_sign_detail.js)
+
+---
+
+### vip_sign_history - 黑胶乐签打卡历史 / 状态查询
+
+说明 : 按展示场景查询黑胶乐签打卡历史。使用 eapi。
+
+**可选参数 :** `type` : `0` 用户信息栏（默认），`1` 黑胶乐签
+
+**方法名 :** `vip_sign_history`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("type", "1");
+let result = client.vip_sign_history(&query).await?;
+```
+
+**上游模块 :** [`module/vip_sign_history.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/vip_sign_history.js)
+
+---
+
+### vip_tasks_v1 - 会员任务 - 新版
+
+说明 : 查询会员任务，可传入用户 ID。使用 xeapi。
+
+**可选参数 :** `id` : 资源 ID
+
+**方法名 :** `vip_tasks_v1`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("id", user_id);
+let result = client.vip_tasks_v1(&query).await?;
+```
+
+**上游模块 :** [`module/vip_tasks_v1.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/vip_tasks_v1.js)
+
+---
+
+### voicelist_my_created - 我创建的播客声音
+
+说明 : 我创建的播客声音。使用 weapi。
+
+**可选参数 :** `limit` : 返回条数，默认 `20`
+
+**方法名 :** `voicelist_my_created`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("limit", "10");
+let result = client.voicelist_my_created(&query).await?;
+```
+
+**上游模块 :** [`module/voicelist_my_created.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/voicelist_my_created.js)
+
+---
+
+### yunbei_task_finish_v1 - 云贝广告任务 - 完成任务领取云贝
+
+说明 : 上报一次已完成的云贝广告任务；实际可领取数量通常来自 `yunbei_task_list_v1` 的 `singleAmount`。使用 weapi。
+
+**可选参数 :** `yunbeiAmount` : 云贝数量，默认 `150`
+
+**方法名 :** `yunbei_task_finish_v1`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("yunbeiAmount", single_amount);
+let result = client.yunbei_task_finish_v1(&query).await?;
+```
+
+**上游模块 :** [`module/yunbei_task_finish_v1.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/yunbei_task_finish_v1.js)
+
+---
+
+### yunbei_task_list_v1 - 云贝广告任务 - 查询今日任务状态
+
+说明 : 云贝广告任务：查询今日任务状态。使用 weapi。
+
+**参数 :** 无业务参数。
+
+**方法名 :** `yunbei_task_list_v1`
+
+**调用例子 :**
+```rust
+let query = Query::new();
+let result = client.yunbei_task_list_v1(&query).await?;
+```
+
+**上游模块 :** [`module/yunbei_task_list_v1.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/yunbei_task_list_v1.js)
+
+---
+
+### yunbei_task_recommend_song - 云贝广告任务 - 获取推荐歌曲
+
+说明 : 云贝广告任务：获取推荐歌曲。使用 weapi。
+
+**可选参数 :** `offset` : 分页偏移量，默认 `0` ; `limit` : 返回条数，默认 `10`
+
+**方法名 :** `yunbei_task_recommend_song`
+
+**调用例子 :**
+```rust
+let query = Query::new().param("offset", "0");
+let result = client.yunbei_task_recommend_song(&query).await?;
+```
+
+**上游模块 :** [`module/yunbei_task_recommend_song.js`](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/blob/75bf2e5/module/yunbei_task_recommend_song.js)
+
+---
 
 ## 致谢 & License
 

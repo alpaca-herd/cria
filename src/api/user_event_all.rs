@@ -19,6 +19,8 @@ impl ApiClient {
     /// - `size` 只取第一页回包，按数值保存；非数值为 `null`
     /// - 按事件 `id` 去重，没有 `id` 的事件原样保留
     /// - 每一页的 cookie 依次累加到最终回包
+    /// - 分页未返回业务码 200 时立即停止，保留该页回包及累计 cookie；状态取该页的
+    ///   4xx/5xx 业务码，无法映射时返回 502。
     /// - `more` 为真但 `lasttime` 为空或重复，或页数达到上限时，返回上游同形的
     ///   502 错误回包（保留已收集的 cookie），而不是抛出只含部分结果的响应
     ///
@@ -84,7 +86,19 @@ impl ApiClient {
             );
 
             let mut page = self.user_event(&page_query).await?;
-            cookies.extend(page.cookie.iter().cloned());
+            cookies.append(&mut page.cookie);
+            let code = page.body.get("code").and_then(|code| {
+                code.as_i64()
+                    .or_else(|| code.as_str().and_then(|text| text.parse().ok()))
+            });
+            if page.status != 200 || code != Some(200) {
+                // 请求层会把部分业务错误码归一为 200；分页不能把这些回包当作成功。
+                if page.status == 200 {
+                    page.status = code.filter(|code| (400..600).contains(code)).unwrap_or(502);
+                }
+                page.cookie = cookies;
+                return Ok(page);
+            }
 
             if page_count == 1 {
                 size = page.body.get("size").and_then(js_number);
@@ -240,3 +254,6 @@ fn js_number_to_string(value: &serde_json::Number) -> String {
         value.to_string()
     }
 }
+
+#[cfg(test)]
+mod tests;
