@@ -229,11 +229,12 @@ mod personal_fm_mode;
 
 // ---- Banner ----
 mod banner;
+mod banner_v3;
+
 // ---- 广告相关 ----
 mod ad_get;
 mod ad_listening_rights;
 mod ad_listening_rights_gain;
-mod banner_v3;
 
 // ---- 签到 ----
 mod daily_signin;
@@ -343,7 +344,7 @@ mod share_resource;
 // ---- 资源操作 ----
 mod resource_like;
 
-// ---- 国家编码 ----
+// ---- 地区编码 ----
 mod countries_code_list;
 mod lbs_city_code;
 
@@ -419,7 +420,9 @@ mod musician_tasks;
 mod musician_tasks_new;
 mod musician_vip_tasks;
 
-// ---- UGC 百科相关 ----
+// ---- 云小编相关 ----
+mod middle_play_do_lottery;
+mod middle_play_lottery_remain_chance;
 mod rep_ugc_activity_collect;
 mod rep_ugc_activity_get;
 mod rep_ugc_exam_info_get;
@@ -433,6 +436,8 @@ mod rep_ugc_user_sign;
 mod rep_ugc_user_vip;
 mod thinktank_audit_resource_detail;
 mod thinktank_audit_resource_update;
+
+// ---- UGC 百科相关 ----
 mod ugc_album_get;
 mod ugc_artist_get;
 mod ugc_artist_search;
@@ -441,11 +446,13 @@ mod ugc_mv_get;
 mod ugc_song_get;
 mod ugc_user_devote;
 
-// ---- 粉丝中心相关 ----
+// ---- 乐迷团相关 ----
 mod fans_group_detail;
 mod fans_group_feed_recommend;
 mod fans_group_user_group_detail;
 mod fans_group_user_groups;
+
+// ---- 粉丝中心相关 ----
 mod fanscenter_basicinfo_age_get;
 mod fanscenter_basicinfo_gender_get;
 mod fanscenter_basicinfo_province_get;
@@ -520,10 +527,6 @@ mod cloud_upload_complete;
 mod cloud_upload_token;
 mod song_cloud_download;
 
-// ---- 活动相关 ----
-mod middle_play_do_lottery;
-mod middle_play_lottery_remain_chance;
-
 // ---- 助眠解压相关 ----
 mod sati_resource_list;
 mod sati_resource_list_more;
@@ -531,6 +534,7 @@ mod sati_resource_sub;
 mod sati_resource_sub_list;
 mod sati_tag_list;
 mod sati_timescene_resources_get;
+
 // ---- EAPI 工具 ----
 mod eapi_decrypt;
 
