@@ -1,6 +1,6 @@
 [package]
 name = "cria-api"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "CRIA (Cloud-music Rust Integration API): native Rust client for the NetEase Cloud Music API on the compio runtime"
 license = "MIT"
