@@ -11,9 +11,10 @@ impl ApiClient {
     pub async fn user_event(&self, query: &Query) -> Result<ApiResponse> {
         let data = json!({
             "getcounts": true,
-            "time": query.get_or("lasttime", "-1").parse::<i64>().unwrap_or(-1),
-            "limit": query.get_or("limit", "30").parse::<i64>().unwrap_or(30),
-            "total": false
+            "time": query.get("lasttime").map_or(json!(-1), |value| json!(value)),
+            "limit": query.get("limit").map_or(json!(30), |value| json!(value)),
+            "total": false,
+            "fromRN": "true"
         });
         self.request(
             &format!("/api/event/get/{}", query.get_or("uid", "0")),

@@ -13,12 +13,25 @@ public API. `CHANGELOG_zh.md` carries the same entries in Simplified Chinese.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-19
+
 ### Changed
 
 - The documentation states the provenance accurately: CRIA is maintained by CNMPlayer, originates from
   ncm-api-rs and keeps its endpoints in sync with api-enhanced.
 - Releases are cut from GitHub: a `vX.Y.Z` tag on `main` publishes the crate to crates.io through CI and
   creates the matching GitHub Release.
+- Synced ten endpoint behavior changes with api-enhanced, including xeapi/check-token routes, the new voice-list search path, VIP sign-in's two-step response, vivid URL fallback handling, and client-side NMTID propagation.
+- For `voicelist_search`, pass `keyword` instead of `podcastName` and set `offset` explicitly if starting at 0. The new defaults are `limit=10` and `offset=30`.
+- For `vip_sign`, read `body.signed` to determine whether sign-in succeeded. The raw sign-in and check-in detail responses are now under `body.taskSign` and `body.checkinDetail`.
+
+### Added
+
+- Added 82 api-enhanced endpoint ports. Eight upstream modules remain intentionally omitted as documented in CONTRIBUTING.md.
+
+### Fixed
+
+- `user_event_all` reports failed pages instead of returning a successful but incomplete result.
 
 ## [0.1.0] - 2026-11-17
 
@@ -35,5 +48,6 @@ First release as a standalone crate, split out of CNMPlayer with its history pre
 - A single per-request deadline (`ApiClient::DEFAULT_TIMEOUT`, adjustable with `set_timeout`).
 - Cargo features `native-tls`, `gzip` and `brotli`, enabled by default.
 
-[Unreleased]: https://github.com/alpaca-herd/cria/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/alpaca-herd/cria/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/alpaca-herd/cria/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/alpaca-herd/cria/releases/tag/v0.1.0

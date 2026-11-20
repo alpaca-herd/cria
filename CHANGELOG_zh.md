@@ -10,10 +10,23 @@
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-19
+
 ### 变更
 
 - 文档准确说明来源链：CRIA 由 CNMPlayer 维护，源自 ncm-api-rs，并持续对照 api-enhanced 同步接口。
 - 发版以 GitHub 为准：在 `main` 上推送 `vX.Y.Z` tag 后，由 CI 将 crate 发布到 crates.io 并创建对应的 GitHub Release。
+- 同步 api-enhanced 的十项接口行为变更，包含 xeapi/易盾 token 路径、新声音列表搜索地址、黑胶乐签两步回包、vivid 音质回退以及客户端 NMTID 传递。
+- `voicelist_search` 改用 `keyword`，不再读取 `podcastName`；从第 0 条开始查询时需显式传 `offset=0`。新默认值为 `limit=10`、`offset=30`。
+- `vip_sign` 的签到结果请读 `body.signed`；原始签到和打卡详情回包分别位于 `body.taskSign` 和 `body.checkinDetail`。
+
+### 新增
+
+- 新增 82 个 api-enhanced 接口移植；另有 8 个上游模块按 CONTRIBUTING.md 所述有意不移植。
+
+### 修复
+
+- `user_event_all` 不再把分页失败当成成功，避免将不完整的动态列表当作完整结果返回。
 
 ## [0.1.0] - 2026-11-17
 
@@ -27,5 +40,6 @@
 - 单一请求 deadline（`ApiClient::DEFAULT_TIMEOUT`，可用 `set_timeout` 调整）。
 - Cargo feature `native-tls`、`gzip`、`brotli`，默认启用。
 
-[Unreleased]: https://github.com/alpaca-herd/cria/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/alpaca-herd/cria/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/alpaca-herd/cria/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/alpaca-herd/cria/releases/tag/v0.1.0

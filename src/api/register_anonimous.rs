@@ -3,7 +3,6 @@ use crate::error::Result;
 /// 匿名注册
 /// 对应 Node.js module/register_anonimous.js
 use crate::request::{ApiClient, ApiResponse, CryptoType};
-use crate::util::device::generate_device_id;
 use base64::{Engine, engine::general_purpose::STANDARD};
 use md5::{Digest, Md5};
 use serde_json::json;
@@ -27,19 +26,22 @@ impl ApiClient {
     /// 匿名注册
     /// 对应 /register/anonimous
     pub async fn register_anonimous(&self, query: &Query) -> Result<ApiResponse> {
-        let device_id = generate_device_id();
-        let id_with_hash = format!("{} {}", device_id, cloudmusic_dll_encode_id(&device_id));
+        let device_id = self.device_id();
+        let id_with_hash = format!("{} {}", device_id, cloudmusic_dll_encode_id(device_id));
         let encoded_id = STANDARD.encode(id_with_hash.as_bytes());
         let data = json!({
             "username": encoded_id
         });
-        let result = self
+        let mut result = self
             .request(
                 "/api/register/anonimous",
                 data,
-                query.to_option(CryptoType::Weapi),
+                query.to_option(CryptoType::Xeapi),
             )
             .await?;
+        if let Some(body) = result.body.as_object_mut() {
+            body.insert("cookie".to_string(), json!(result.cookie.join(";")));
+        }
         Ok(result)
     }
 }

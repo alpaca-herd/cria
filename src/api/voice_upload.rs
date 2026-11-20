@@ -1,5 +1,5 @@
 use super::Query;
-use crate::error::Result;
+use crate::error::{NcmError, Result};
 /// 上传音频（声音）
 /// 对应 Node.js module/voice_upload.js
 ///
@@ -9,6 +9,99 @@ use crate::request::{ApiClient, ApiResponse, CryptoType, direct_request_headers}
 use serde_json::json;
 
 impl ApiClient {
+    /// 上传声音封面图片并返回 `imgId` 与 `url_pre`。
+    ///
+    /// 这是上游 `voice_upload` 的 `imgFile` 分支在 Rust 中的显式版本；调用方随后可将
+    /// 返回的 `imgId` 放入 `coverImgId`，或直接使用 [`ApiClient::voice_upload_with_cover`]。
+    pub async fn upload_voice_cover(
+        &self,
+        query: &Query,
+        image_name: &str,
+        image_data: Vec<u8>,
+        image_mimetype: Option<&str>,
+    ) -> Result<ApiResponse> {
+        let token_res = self
+            .request(
+                "/api/nos/token/alloc",
+                json!({
+                    "bucket": "yyimgs",
+                    "ext": "jpg",
+                    "filename": image_name,
+                    "local": false,
+                    "nos_product": 0,
+                    "return_body": "{\"code\":200,\"size\":\"$(ObjectSize)\"}",
+                    "type": "other"
+                }),
+                query.to_option(CryptoType::Weapi),
+            )
+            .await?;
+        let result = &token_res.body["result"];
+        let required = |field: &str| {
+            result[field]
+                .as_str()
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| NcmError::Unknown(format!("NOS token response omitted {field}")))
+        };
+        let object_key = required("objectKey")?;
+        let token = required("token")?;
+        let doc_id = &result["docId"];
+        if !doc_id.is_number() && doc_id.as_str().is_none_or(str::is_empty) {
+            return Err(NcmError::Unknown("NOS token response omitted docId".into()));
+        }
+        let upload_url = format!(
+            "https://nosup-hz1.127.net/yyimgs/{}?offset=0&complete=true&version=1.0",
+            object_key
+        );
+        let response = self
+            .client
+            .post(&upload_url)?
+            .headers(direct_request_headers())
+            .header("x-nos-token", token)?
+            .header("Content-Type", image_mimetype.unwrap_or("image/jpeg"))?
+            .body(image_data)
+            .send()
+            .await?;
+        if !response.status().is_success() {
+            return Err(NcmError::from_api(
+                i64::from(response.status().as_u16()),
+                "NOS cover upload failed".into(),
+            ));
+        }
+        Ok(ApiResponse {
+            status: 200,
+            body: json!({
+                "code": 200,
+                "imgId": doc_id,
+                "url_pre": format!("https://p1.music.126.net/{}", object_key)
+            }),
+            cookie: token_res.cookie,
+        })
+    }
+
+    /// 上传音频并先上传封面；等价于上游 `voice_upload` 的 `imgFile` 路径。
+    pub async fn voice_upload_with_cover(
+        &self,
+        query: &Query,
+        file_name: &str,
+        file_data: Vec<u8>,
+        file_mimetype: Option<&str>,
+        cover_name: &str,
+        cover_data: Vec<u8>,
+        cover_mimetype: Option<&str>,
+    ) -> Result<ApiResponse> {
+        let cover = self
+            .upload_voice_cover(query, cover_name, cover_data, cover_mimetype)
+            .await?;
+        let id = &cover.body["imgId"];
+        let cover_id = id.as_str().map_or_else(|| id.to_string(), str::to_owned);
+        let mut upload_query = query.clone();
+        upload_query
+            .params
+            .insert("coverImgId".to_string(), cover_id);
+        self.voice_upload(&upload_query, file_name, file_data, file_mimetype)
+            .await
+    }
+
     /// 上传音频文件
     ///
     /// query 参数:

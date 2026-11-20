@@ -41,6 +41,31 @@ struct XeapiState {
 struct SharedState {
     cookies: Mutex<CookieJar>,
     xeapi: Mutex<XeapiState>,
+    nmtid: Mutex<NmtidState>,
+}
+
+struct NmtidState {
+    epoch: u64,
+    retries_left: u8,
+}
+
+impl NmtidState {
+    fn for_epoch(epoch: u64) -> Self {
+        Self {
+            epoch,
+            retries_left: 3,
+        }
+    }
+}
+
+impl Default for NmtidState {
+    fn default() -> Self {
+        Self::for_epoch(0)
+    }
+}
+
+fn fallback_nmtid() -> String {
+    format!("00O{}", random_hex(19))
 }
 
 impl std::fmt::Debug for SharedState {
@@ -295,6 +320,11 @@ impl ApiClient {
                 "API request data must be a JSON object".to_string(),
             ));
         }
+        let crypto_type = if options.crypto == CryptoType::Eapi && !ENCRYPT {
+            CryptoType::Api
+        } else {
+            options.crypto.clone()
+        };
         let mut headers = HeaderMap::new();
         // weapi 下面会换成自己的 Referer；其余加密方式沿用网页端 Referer。
         headers.insert(REFERER, HeaderValue::from_static(WEB_REFERER));
@@ -373,11 +403,28 @@ impl ApiClient {
             .entry("appver".to_string())
             .or_insert_with(|| os.appver.to_string());
 
-        // 非登录接口注入 NMTID
-        if !uri.contains("login") {
-            cookie_map
-                .entry("NMTID".to_string())
-                .or_insert_with(|| random_hex(8));
+        // 只有缺少 NMTID 的 eapi 请求才探测服务端；Query cookie 不访问客户端状态。
+        cookie_map.retain(|key, value| key != "NMTID" || !value.is_empty());
+        let mut nmtid_probe = false;
+        if !cookie_map.contains_key("NMTID") {
+            if let Some(epoch) = jar_epoch {
+                let mut state = lock(&self.shared.nmtid);
+                if state.epoch < epoch {
+                    *state = NmtidState::for_epoch(epoch);
+                }
+                if state.epoch == epoch {
+                    if crypto_type == CryptoType::Eapi && state.retries_left > 0 {
+                        nmtid_probe = true;
+                    } else {
+                        cookie_map.insert("NMTID".to_string(), fallback_nmtid());
+                    }
+                }
+            }
+            if crypto_type != CryptoType::Eapi {
+                cookie_map
+                    .entry("NMTID".to_string())
+                    .or_insert_with(fallback_nmtid);
+            }
         }
 
         // 未登录时注入匿名 token
@@ -390,13 +437,6 @@ impl ApiClient {
         }
 
         headers.insert(COOKIE, header_value(&cookie_obj_to_string(&cookie_map)));
-
-        // 确定加密方式
-        let crypto_type = if options.crypto == CryptoType::Eapi && !ENCRYPT {
-            CryptoType::Api
-        } else {
-            options.crypto.clone()
-        };
 
         // 与上游一致：所有加密方式都带 e_r；只有 eapi/weapi 的回包会按 e_r 加密。
         let mut data = data;
@@ -577,6 +617,11 @@ impl ApiClient {
                 if let Some(music_a) = cookie_map.get("MUSIC_A") {
                     header_map.insert("MUSIC_A".to_string(), music_a.clone());
                 }
+                if crypto_type == CryptoType::Eapi
+                    && let Some(nmtid) = cookie_map.get("NMTID")
+                {
+                    header_map.insert("NMTID".to_string(), nmtid.clone());
+                }
 
                 let header_cookie_str = header_map
                     .iter()
@@ -690,12 +735,19 @@ impl ApiClient {
             })
             .await
             .map_err(|_| NcmError::Timeout { timeout })??;
-        // 与浏览器 cookie jar 一致：只要拿到 HTTP 响应就合并 Set-Cookie，与业务码无关。
+
+        // 即使本次回包没有 Set-Cookie，也要计入成功送达的 NMTID 探测。
         if let Some(epoch) = jar_epoch
-            && !resp_cookies.is_empty()
+            && (nmtid_probe || !resp_cookies.is_empty())
         {
             let mut jar = lock(&self.shared.cookies);
             if jar.epoch() == epoch {
+                if nmtid_probe && (200..300).contains(&status_code) {
+                    let mut state = lock(&self.shared.nmtid);
+                    if state.epoch == epoch && state.retries_left > 0 {
+                        state.retries_left -= 1;
+                    }
+                }
                 for set_cookie in &resp_cookies {
                     jar.apply_set_cookie(set_cookie);
                 }
